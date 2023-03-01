@@ -46,7 +46,8 @@
 #include <rm_msgs/GpioData.h>
 #include <engineer_middleware/chassis_interface.h>
 
-#include "trajectory_planner.h"
+#include "engineer_middleware/trajectory_planner.h"
+
 namespace engineer_middleware
 {
 template <class Interface>
@@ -227,7 +228,7 @@ public:
       {
         tolerance_joints_.push_back(xmlRpcGetDouble(motion["tolerance"]["tolerance_joints"], i));
       }
-      joints_cubic_polynomial(interface_, plan_, target_);
+      target_ = {};
     }
   }
   bool move() override
@@ -236,8 +237,10 @@ public:
       return false;
     MoveitMotionBase::move();
     interface_.setJointValueTarget(target_);
-    return (interface_.asyncMove() == moveit::planning_interface::MoveItErrorCode::SUCCESS);
-  }
+    Trajectory_planner::joints_cubic_polynomial(interface_, plan_, target_);
+    // return (interface_.asyncMove() == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+    return true;
+  };
 
 private:
   bool isReachGoal() override
@@ -253,7 +256,7 @@ private:
     return flag;
   }
   std::vector<double> target_, tolerance_joints_;
-  moveit::planning_interface::MoveGroupInterface::Plan plan_
+  moveit::planning_interface::MoveGroupInterface::Plan plan_;
 };
 
 template <class MsgType>
