@@ -46,6 +46,7 @@
 #include <rm_msgs/GpioData.h>
 #include <engineer_middleware/chassis_interface.h>
 
+#include "trajectory_planner.h"
 namespace engineer_middleware
 {
 template <class Interface>
@@ -226,6 +227,7 @@ public:
       {
         tolerance_joints_.push_back(xmlRpcGetDouble(motion["tolerance"]["tolerance_joints"], i));
       }
+      joints_cubic_polynomial(interface_, plan_, target_);
     }
   }
   bool move() override
@@ -251,6 +253,7 @@ private:
     return flag;
   }
   std::vector<double> target_, tolerance_joints_;
+  moveit::planning_interface::MoveGroupInterface::Plan plan_
 };
 
 template <class MsgType>
