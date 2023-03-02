@@ -175,7 +175,7 @@ public:
     if (is_cartesian_)
     {
       moveit_msgs::RobotTrajectory trajectory;
-      interface_.computeCartesianPath(waypoints_, 0.05, 0.0, trajectory);
+      interface_.computeCartesianPath(waypoints_, 0.4, 0.0, trajectory);
       return interface_.asyncExecute(trajectory) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
     }
     else
@@ -203,7 +203,7 @@ private:
   std::vector<geometry_msgs::Pose> waypoints_;
   bool has_pos_, has_ori_, is_cartesian_;
   geometry_msgs::PoseStamped target_;
-  std::vector<geometry_msgs::PoseStamped> targets_{ 5 };
+  std::vector<geometry_msgs::PoseStamped> targets_{ 4 };
   double tolerance_position_, tolerance_orientation_;
 };
 
