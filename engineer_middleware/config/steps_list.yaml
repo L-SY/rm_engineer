@@ -1,8 +1,8 @@
 common:
   speed:
     slowly: &SLOWLY
-      speed: 0.1
-      accel: 0.1
+      speed: 0.2
+      accel: 0.2
       timeout: 10.
     normally: &NORMALLY
       speed: 0.4
@@ -12,6 +12,10 @@ common:
       speed: 0.6
       accel: 0.6
       timeout: 4.
+    cartesian: &CARTESIAN
+      speed: 0.05
+      accel: 0.05
+      timeout: 100.
 
   tolerance:
     normal_tolerance: &NORMAL_TOLERANCE
@@ -54,19 +58,19 @@ common:
   gimbal:
     sky_gimbal: &SKY_POS
       frame: gimbal_base
-      position: [ -2, 0.15, 1. ]
+      position: [ 2, 0.15, 1. ]
     back_gimbal: &BACK_POS
       frame: gimbal_base
-      position: [ 2 ,0.01, -0.1 ]
+      position: [ 2 ,0.01, 0.1 ]
     island_gimbal: &ISLAND_POS
       frame: gimbal_base
-      position: [ -2 ,0.01, -0.3 ]
+      position: [ -2 ,0.01, 0.5 ]
     ground_pos: &GROUND_POS
       frame: gimbal_base
-      position: [ -2 ,0.01, -0.3 ]
+      position: [ 2 ,0.01, -0.5 ]
     reversal_pos: &REVERSAL_POS
       frame: gimbal_base
-      position: [ -2,0.01, 0.]
+      position: [ 2,0.01, 0.]
 
 steps_list:
   ################### COMMON STEP####################
@@ -251,13 +255,9 @@ steps_list:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
-    - step: "move to wait"
+    - step: "arm wait"
       arm:
-        frame: base_link
-        position: [ 0.283, 0.225, 0.836 ]
-        rpy: [ -2.15,-1.560,-2.538 ]
-        common:
-          <<: *SLOWLY
+        <<: *PICK_WAIT
   ###################    SMALL_ISLAND    ####################
   LF_SMALL_ISLAND0:
     - step: "arm wait"
@@ -412,6 +412,10 @@ steps_list:
     - step: "close gripper"
       gripper:
         <<: *CLOSE_GRIPPER
+  STORE_WHEN_ZERO_STONE000:
+    - step: "home with no stone"
+      arm:
+        <<: *HOME_ONE_STONE
 
   STORE_WHEN_ONE_STONE0:
     - step: "open gripper"
@@ -436,6 +440,12 @@ steps_list:
     - step: "close gripper"
       gripper:
         <<: *CLOSE_GRIPPER
+  STORE_WHEN_ONE_STONE000:
+    - step: "home with no stone"
+      arm:
+        <<: *HOME_TWO_STONE
+
+
       ###################   TAKE   ####################
   TAKE_WHEN_ONE_STONE0:
     - step: "open gripper"
@@ -461,9 +471,9 @@ steps_list:
   TAKE_WHEN_ONE_STONE000:
     - step: "move joint6"
       arm:
-        joints: [ 0.084, 0.013, -0.296, -1.541, 1.656, 0.007 ]
+        joints: [ 0.084, -0.03, -0.296, -1.541, 1.656, 0.007 ]
         common:
-          <<: *NORMALLY
+          <<: *SLOWLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "home with no stone"
@@ -494,11 +504,48 @@ steps_list:
   TAKE_WHEN_TWO_STONE000:
     - step: "move joint6"
       arm:
-        joints: [ 0.276, 0.013, -0.296, -1.541, 1.656, 0.007 ]
+        joints: [ 0.276, -0.03, -0.296, -1.541, 1.656, 0.007 ]
         common:
-          <<: *NORMALLY
+          <<: *SLOWLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "home with no stone"
       arm:
         <<: *HOME_ONE_STONE
+
+  TWST_MULIT:
+    - step: "step"
+      arm:
+        frame: base_link
+        positions:
+          - [0.506, -0.252, 0.620]
+          - [0.505, -0.293, 0.803]
+          - [0.505, -0.293, 0.802]
+          - [0.281,  0.221, 0.839]
+        rpys:
+          - [-0.5724743199929253, 1.4988237940237685, 2.557518900721491]
+          - [-0.015622399783568816, 1.4607097304087369, 3.0990173374884096]
+          - [-1.428759238775579, -0.5612907904428771, 1.4690240391587208]
+          - [1.579511151162471, -1.458698395982309, 0.018540896095895994]
+        cartesian: true
+        common:
+          <<: *CARTESIAN
+        tolerance:
+          <<: *BIGGER_TOLERANCE
+
+  TEST0:
+    - step: "arm ready"
+      arm:
+        joints: [ 0.346, 0.031, -0.250, -1.509, -0.008, 3.102 ]
+        common:
+          <<: *NORMALLY
+        tolerance:
+          <<: *BIGGER_TOLERANCE
+  TEST1:
+    - step: "arm get stone"
+      arm:
+        joints: [ 0.279, 0.031, -0.250, -1.509, -0.008, 3.102 ]
+        common:
+          <<: *NORMALLY
+        tolerance:
+          <<: *BIGGER_TOLERANCE
