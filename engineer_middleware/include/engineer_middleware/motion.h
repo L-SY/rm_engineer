@@ -141,6 +141,30 @@ public:
       target_.pose.orientation = quat_msg;
       has_ori_ = true;
     }
+    if (motion.hasMember("positions"))
+    {
+      XmlRpc::XmlRpcValue positions = motion["positions"];
+      for (int i = 0; i < (int)positions.size(); ++i)
+      {
+        targets_[i].pose.position.x = xmlRpcGetDouble(positions[i], 0);
+        targets_[i].pose.position.y = xmlRpcGetDouble(positions[i], 1);
+        targets_[i].pose.position.z = xmlRpcGetDouble(positions[i], 2);
+      }
+      has_pos_ = true;
+    }
+    if (motion.hasMember("rpys"))
+    {
+      tf2::Quaternion quat_tf;
+      XmlRpc::XmlRpcValue rpys = motion["rpys"];
+      for (int i = 0; i < (int)rpys.size(); ++i)
+      {
+        quat_tf.setRPY(motion["rpy"][i][0], motion["rpy"][i][1], motion["rpy"][i][2]);
+        geometry_msgs::Quaternion quat_msg = tf2::toMsg(quat_tf);
+        targets_[i].pose.orientation = quat_msg;
+        waypoints_.push_back(targets_[i].pose);
+      }
+      has_ori_ = true;
+    }
     ROS_ASSERT(has_pos_ || has_ori_);
     if (motion.hasMember("cartesian"))
       is_cartesian_ = motion["cartesian"];
@@ -165,9 +189,7 @@ public:
     if (is_cartesian_)
     {
       moveit_msgs::RobotTrajectory trajectory;
-      std::vector<geometry_msgs::Pose> waypoints;
-      waypoints.push_back(target_.pose);
-      if (interface_.computeCartesianPath(waypoints, 0.01, 0.0, trajectory) < 99.9)
+      if (interface_.computeCartesianPath(waypoints_, 0.01, 0.0, trajectory) < 99.9)
         return false;
       return interface_.asyncExecute(trajectory) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
     }
@@ -202,8 +224,10 @@ private:
                 tolerance_orientation_);
   }
   tf2_ros::Buffer& tf_;
+  std::vector<geometry_msgs::Pose> waypoints_;
   bool has_pos_, has_ori_, is_cartesian_;
   geometry_msgs::PoseStamped target_;
+  std::vector<geometry_msgs::PoseStamped> targets_;
   double tolerance_position_, tolerance_orientation_;
 };
 
