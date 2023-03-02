@@ -122,25 +122,6 @@ public:
     target_.pose.orientation.w = 1.;
     tolerance_position_ = xmlRpcGetDouble(motion, "tolerance_position", 0.01);
     tolerance_orientation_ = xmlRpcGetDouble(motion, "tolerance_orientation", 0.1);
-    if (motion.hasMember("frame"))
-      target_.header.frame_id = std::string(motion["frame"]);
-    if (motion.hasMember("position"))
-    {
-      ROS_ASSERT(motion["position"].getType() == XmlRpc::XmlRpcValue::TypeArray);
-      target_.pose.position.x = xmlRpcGetDouble(motion["position"], 0);
-      target_.pose.position.y = xmlRpcGetDouble(motion["position"], 1);
-      target_.pose.position.z = xmlRpcGetDouble(motion["position"], 2);
-      has_pos_ = true;
-    }
-    if (motion.hasMember("rpy"))
-    {
-      ROS_ASSERT(motion["rpy"].getType() == XmlRpc::XmlRpcValue::TypeArray);
-      tf2::Quaternion quat_tf;
-      quat_tf.setRPY(motion["rpy"][0], motion["rpy"][1], motion["rpy"][2]);
-      geometry_msgs::Quaternion quat_msg = tf2::toMsg(quat_tf);
-      target_.pose.orientation = quat_msg;
-      has_ori_ = true;
-    }
     if (motion.hasMember("positions"))
     {
       XmlRpc::XmlRpcValue positions = motion["positions"];
@@ -158,7 +139,7 @@ public:
       XmlRpc::XmlRpcValue rpys = motion["rpys"];
       for (int i = 0; i < (int)rpys.size(); ++i)
       {
-        quat_tf.setRPY(motion["rpy"][i][0], motion["rpy"][i][1], motion["rpy"][i][2]);
+        quat_tf.setRPY(xmlRpcGetDouble(rpys[i], 0), xmlRpcGetDouble(rpys[i], 1), xmlRpcGetDouble(rpys[i], 2));
         geometry_msgs::Quaternion quat_msg = tf2::toMsg(quat_tf);
         targets_[i].pose.orientation = quat_msg;
         waypoints_.push_back(targets_[i].pose);
@@ -166,6 +147,11 @@ public:
       has_ori_ = true;
     }
     ROS_ASSERT(has_pos_ || has_ori_);
+    if (motion.hasMember("frame"))
+      for (int i = 0; i < (int)targets_.size(); ++i)
+      {
+        targets_[i].header.frame_id = std::string(motion["frame"]);
+      }
     if (motion.hasMember("cartesian"))
       is_cartesian_ = motion["cartesian"];
   }
@@ -189,21 +175,11 @@ public:
     if (is_cartesian_)
     {
       moveit_msgs::RobotTrajectory trajectory;
-      if (interface_.computeCartesianPath(waypoints_, 0.01, 0.0, trajectory) < 99.9)
-        return false;
+      interface_.computeCartesianPath(waypoints_, 0.05, 0.0, trajectory);
       return interface_.asyncExecute(trajectory) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
     }
     else
-    {
-      if (has_pos_ && has_ori_)
-        interface_.setPoseTarget(target_);
-      else if (has_pos_ && !has_ori_)
-        interface_.setPositionTarget(target_.pose.position.x, target_.pose.position.y, target_.pose.position.z);
-      else if (!has_pos_ && has_ori_)
-        interface_.setOrientationTarget(target_.pose.orientation.x, target_.pose.orientation.y,
-                                        target_.pose.orientation.z, target_.pose.orientation.w);
-      return interface_.asyncMove() == moveit::planning_interface::MoveItErrorCode::SUCCESS;
-    }
+      return false;
   }
 
 private:
@@ -212,11 +188,11 @@ private:
     geometry_msgs::Pose pose = interface_.getCurrentPose().pose;
     double roll_current, pitch_current, yaw_current, roll_goal, pitch_goal, yaw_goal;
     quatToRPY(pose.orientation, roll_current, pitch_current, yaw_current);
-    quatToRPY(target_.pose.orientation, roll_goal, pitch_goal, yaw_goal);
+    quatToRPY(targets_[(int)targets_.size() - 1].pose.orientation, roll_goal, pitch_goal, yaw_goal);
     // TODO: Add orientation error check
-    return (std::pow(pose.position.x - target_.pose.position.x, 2) +
-                    std::pow(pose.position.y - target_.pose.position.y, 2) +
-                    std::pow(pose.position.z - target_.pose.position.z, 2) <
+    return (std::pow(pose.position.x - targets_[(int)targets_.size() - 1].pose.position.x, 2) +
+                    std::pow(pose.position.y - targets_[(int)targets_.size() - 1].pose.position.y, 2) +
+                    std::pow(pose.position.z - targets_[(int)targets_.size() - 1].pose.position.z, 2) <
                 tolerance_position_ &&
             std::abs(angles::shortest_angular_distance(yaw_current, yaw_goal)) +
                     std::abs(angles::shortest_angular_distance(pitch_current, pitch_goal)) +
@@ -227,7 +203,7 @@ private:
   std::vector<geometry_msgs::Pose> waypoints_;
   bool has_pos_, has_ori_, is_cartesian_;
   geometry_msgs::PoseStamped target_;
-  std::vector<geometry_msgs::PoseStamped> targets_;
+  std::vector<geometry_msgs::PoseStamped> targets_{ 5 };
   double tolerance_position_, tolerance_orientation_;
 };
 
