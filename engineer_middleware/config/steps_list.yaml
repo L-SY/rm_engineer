@@ -54,19 +54,19 @@ common:
   gimbal:
     sky_gimbal: &SKY_POS
       frame: gimbal_base
-      position: [ -2, 0.15, 1. ]
+      position: [ 2, 0.15, 0.5 ]
     back_gimbal: &BACK_POS
       frame: gimbal_base
-      position: [ 2 ,0.01, -0.1 ]
+      position: [ -2 ,0.01, 0. ]
     island_gimbal: &ISLAND_POS
       frame: gimbal_base
-      position: [ -2 ,0.01, -0.3 ]
+      position: [ 2 ,0.01, -0.25 ]
     ground_pos: &GROUND_POS
       frame: gimbal_base
-      position: [ -2 ,0.01, -0.3 ]
+      position: [ 2 ,0.01, -0.2 ]
     reversal_pos: &REVERSAL_POS
       frame: gimbal_base
-      position: [ -2,0.01, 0.]
+      position: [ 2,0.01, 0.]
 
 steps_list:
   ################### COMMON STEP####################
@@ -266,7 +266,7 @@ steps_list:
   LF_SMALL_ISLAND00:
     - step: "arm ready to get stone"
       arm:
-        joints: [0.349, 0.031, 0.285, -1.518, -0.043, 3.036]
+        joints: [0.349, 0.031, 0.285, -1.518, -0.043, 3.217387077106941]
         common:
           <<: *NORMALLY
         tolerance:
@@ -276,14 +276,14 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "move arm down to gain stone"
       arm:
-        joints: [ 0.279, 0.031, 0.285, -1.518, -0.043, 3.036 ]
+        joints: [ 0.279, 0.031, 0.285, -1.518, -0.043, 3.217387077106941 ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "move arm up"
       arm:
-        joints: [ 0.458, 0.031, 0.266, -1.518, -0.043, 3.036 ]
+        joints: [ 0.458, 0.031, 0.266, -1.518, -0.043, 3.217387077106941 ]
         common:
           <<: *QUICKLY
         tolerance:
@@ -311,7 +311,7 @@ steps_list:
       scene_name: MID_SMALL_ISLAND
     - step: "arm ready to get stone"
       arm:
-        joints: [0.349, 0.031, 0.009, -1.520, -0.003, 3.116]
+        joints: [0.3484533056100423, 0.03084413880417841, 0.00879305699769145, -1.5101404974370372, 0.004258877900558122, 3.217387077106941]
         common:
           <<: *NORMALLY
         tolerance:
@@ -323,14 +323,14 @@ steps_list:
   SMALL_ISLAND000:
     - step: "arm get stone"
       arm:
-        joints: [0.279, 0.031, 0.009, -1.522, -0.001, 3.123]
+        joints: [0.279, 0.031, 0.009, -1.522, -0.001, 3.217387077106941]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "arm up stone"
       arm:
-        joints: [0.458, 0.031, 0.009, -1.472, -0.0006, 3.120]
+        joints: [0.458, 0.031, 0.009, -1.472, -0.0006, 3.217387077106941]
         common:
           <<: *QUICKLY
         tolerance:
@@ -355,7 +355,7 @@ steps_list:
   RT_SMALL_ISLAND00:
     - step: "arm ready"
       arm:
-        joints: [0.346, 0.031, -0.250, -1.509, -0.008, 3.102]
+        joints: [0.346, 0.031, -0.250, -1.509, -0.008, 3.217387077106941]
         common:
           <<: *NORMALLY
         tolerance:
@@ -365,14 +365,14 @@ steps_list:
           <<: *OPEN_GRIPPER
     - step: "arm get stone"
       arm:
-        joints: [ 0.279, 0.031, -0.250, -1.509, -0.008, 3.102 ]
+        joints: [ 0.279, 0.031, -0.250, -1.509, -0.008, 3.217387077106941 ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "arm up stone"
       arm:
-        joints: [ 0.443, 0.031, -0.288, -1.460, -0.027, 3.140 ]
+        joints: [ 0.443, 0.031, -0.288, -1.460, -0.027, 3.217387077106941 ]
         common:
           <<: *QUICKLY
         tolerance:
@@ -443,7 +443,7 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "move joint1 and 3 and 6"
       arm:
-        joints: [ 0.084, 0.10, -0.296, -1.487, 1.581, 1.601 ]
+        joints: [ 0.084, 0.10, -0.276, -1.487, 1.581, 1.601 ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -452,7 +452,7 @@ steps_list:
   TAKE_WHEN_ONE_STONE00:
     - step: "move joint2 to get stone"
       arm:
-        joints: [ 0.084, -0.03, -0.296, -1.541, 1.656, 1.601 ]
+        joints: [ 0.084, -0.03, -0.276, -1.541, 1.656, 1.601 ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -461,7 +461,7 @@ steps_list:
   TAKE_WHEN_ONE_STONE000:
     - step: "move joint6"
       arm:
-        joints: [ 0.084, 0.013, -0.296, -1.541, 1.656, 0.007 ]
+        joints: [ 0.084, 0.013, -0.276, -1.541, 1.656, 0.007 ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -476,7 +476,7 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "move joint1 and 3 and 6"
       arm:
-        joints: [ 0.276, 0.10, -0.296, -1.487, 1.581, 1.601 ]
+        joints: [ 0.276, 0.10, -0.276, -1.487, 1.581, 1.601 ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -485,7 +485,7 @@ steps_list:
   TAKE_WHEN_TWO_STONE00:
     - step: "move joint6 to get stone"
       arm:
-        joints: [ 0.276, -0.03, -0.296, -1.541, 1.656, 1.601 ]
+        joints: [ 0.276, -0.03, -0.276, -1.541, 1.656, 1.601 ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -494,7 +494,7 @@ steps_list:
   TAKE_WHEN_TWO_STONE000:
     - step: "move joint6"
       arm:
-        joints: [ 0.276, 0.013, -0.296, -1.541, 1.656, 0.007 ]
+        joints: [ 0.276, 0.013, -0.276, -1.541, 1.656, 0.007 ]
         common:
           <<: *NORMALLY
         tolerance:
