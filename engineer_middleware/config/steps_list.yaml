@@ -29,7 +29,7 @@ common:
     home_zero_stone: &HOME_ZERO_STONE
       joints: [0.02, 0.013, 0.007, -1.487, 1.581, -0.194]
       common:
-        <<: *SLOWLY
+        <<: *NORMALLY
       tolerance:
         <<: *NORMAL_TOLERANCE
     home_one_stone: &HOME_ONE_STONE
