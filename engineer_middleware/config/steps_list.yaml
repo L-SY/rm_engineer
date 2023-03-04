@@ -67,6 +67,9 @@ common:
     reversal_pos: &REVERSAL_POS
       frame: gimbal_base
       position: [ 2,0.01, 0.]
+    exchange_pos: &EXCHANGE_POS
+      frame: gimbal_base
+      position: [ 0.01,-3, -1.0 ]
 
 steps_list:
   ################### COMMON STEP####################
@@ -93,6 +96,10 @@ steps_list:
     - step: "reversal gimbal"
       gimbal:
         <<: *REVERSAL_POS
+  EXCHANGE_GIMBAL:
+    - step: "exchange gimbal"
+      gimbal:
+        <<: *EXCHANGE_POS
   ################### GRIPPER ####################
   OPEN_GRIPPER:
     - step: "open gripper"
@@ -174,7 +181,7 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "get ground stone"
       arm:
-        joints: [0., 0.013, 0.007, -0.1, -0.027, -0.092]
+        joints: [-0.00043727240919594346, 0.013219784447105642, 0.006857136886879611, -0.0987931242925928, -0.00996003076049834, 0.14214867160681566]
         common:
           <<: *SLOWLY
         tolerance:
@@ -311,7 +318,7 @@ steps_list:
       scene_name: MID_SMALL_ISLAND
     - step: "arm ready to get stone"
       arm:
-        joints: [0.3484533056100423, 0.03084413880417841, 0.00879305699769145, -1.5101404974370372, 0.004258877900558122, 3.217387077106941]
+        joints: [0.4084533056100423, 0.03084413880417841, 0.00879305699769145, -1.5101404974370372, 0.004258877900558122, 3.217387077106941]
         common:
           <<: *NORMALLY
         tolerance:
@@ -323,7 +330,7 @@ steps_list:
   SMALL_ISLAND000:
     - step: "arm get stone"
       arm:
-        joints: [0.279, 0.031, 0.009, -1.522, -0.001, 3.217387077106941]
+        joints: [0.290, 0.031, 0.009, -1.522, -0.001, 3.217387077106941]
         common:
           <<: *NORMALLY
         tolerance:
