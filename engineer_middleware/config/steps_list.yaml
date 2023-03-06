@@ -44,8 +44,26 @@ common:
         <<: *NORMALLY
       tolerance:
         <<: *NORMAL_TOLERANCE
+    home_zero_stone_slowly: &HOME_ZERO_STONE_SLOWLY
+      joints: [ 0.02, 0.013, 0.007, -1.487, 1.581, -0.194 ]
+      common:
+        <<: *SLOWLY
+      tolerance:
+        <<: *NORMAL_TOLERANCE
+    home_one_stone_slowly: &HOME_ONE_STONE_SLOWLY
+      joints: [ 0.178, 0.013, 0.007, -1.487, 1.581, -0.194 ]
+      common:
+        <<: *SLOWLY
+      tolerance:
+        <<: *NORMAL_TOLERANCE
+    home_two_stone_slowly: &HOME_TWO_STONE_SLOWLY
+      joints: [ 0.366, 0.013, 0.007, -1.487, 1.581, -0.194 ]
+      common:
+        <<: *SLOWLY
+      tolerance:
+        <<: *NORMAL_TOLERANCE
     pick_wait:  &PICK_WAIT
-      joints: [0.456, 0.027, 0.005, -1.525, 1.616, -0.078]
+      joints: [0.438, 0.027, 0.005, -1.525, 1.616, -0.078]
       common:
         <<: *NORMALLY
       tolerance:
@@ -181,11 +199,15 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "get ground stone"
       arm:
-        joints: [-0.00043727240919594346, 0.013219784447105642, 0.006857136886879611, -0.0987931242925928, -0.00996003076049834, 0.14214867160681566]
+        joints: [-0.010000, 0.013219784447105642, 0.006857136886879611, -0.0987931242925928, -0.00996003076049834, 0.14214867160681566]
         common:
           <<: *SLOWLY
         tolerance:
           <<: *BIGGER_TOLERANCE
+  GROUND_STONE0:
+    - step: "arm wait state"
+      arm:
+        <<: *HOME_ONE_STONE_SLOWLY
 
   ################### EXCHANGE ####################
   EXCHANGE_WAIT:
@@ -318,7 +340,7 @@ steps_list:
       scene_name: MID_SMALL_ISLAND
     - step: "arm ready to get stone"
       arm:
-        joints: [0.4084533056100423, 0.03084413880417841, 0.00879305699769145, -1.5101404974370372, 0.004258877900558122, 3.217387077106941]
+        joints: [0.4234533056100423, 0.03084413880417841, 0.00879305699769145, -1.5101404974370372, 0.004258877900558122, 3.217387077106941]
         common:
           <<: *NORMALLY
         tolerance:
@@ -337,16 +359,16 @@ steps_list:
           <<: *BIGGER_TOLERANCE
     - step: "arm up stone"
       arm:
-        joints: [0.458, 0.031, 0.009, -1.472, -0.0006, 3.217387077106941]
+        joints: [0.435, 0.05047151221100016, -0.06156849062735664, -1.4992037839, 0.008332834876478845, 3.2080808812697885]
         common:
-          <<: *QUICKLY
+          <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "reversal stone"
       arm:
-        joints: [ 0.457, 0.031, -0.058, -1.476, 0.001, 1.0 ]
+        joints: [ 0.438, 0.031, -0.058, -1.476, 0.001, 1.0 ]
         common:
-          <<: *QUICKLY
+          <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "arm back"
@@ -459,7 +481,7 @@ steps_list:
   TAKE_WHEN_ONE_STONE00:
     - step: "move joint2 to get stone"
       arm:
-        joints: [ 0.084, -0.03, -0.276, -1.541, 1.656, 1.601 ]
+        joints: [ 0.084, -0.03, -0.266, -1.541, 1.656, 1.601 ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -468,9 +490,9 @@ steps_list:
   TAKE_WHEN_ONE_STONE000:
     - step: "move joint6"
       arm:
-        joints: [ 0.084, 0.013, -0.276, -1.541, 1.656, 0.007 ]
+        joints: [ 0.08264350643170443, 0., -0.266, -1.5407632953407409, 1.656, -0.0031957346223543404 ]
         common:
-          <<: *NORMALLY
+          <<: *SLOWLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "home with no stone"
@@ -483,7 +505,7 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "move joint1 and 3 and 6"
       arm:
-        joints: [ 0.276, 0.10, -0.276, -1.487, 1.581, 1.601 ]
+        joints: [ 0.276, 0.10, -0.276, -1.487, 1.581, 1.601  ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -492,7 +514,7 @@ steps_list:
   TAKE_WHEN_TWO_STONE00:
     - step: "move joint6 to get stone"
       arm:
-        joints: [ 0.276, -0.03, -0.276, -1.541, 1.656, 1.601 ]
+        joints: [ 0.276, -0.03, -0.266, -1.541, 1.656, 1.601 ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -501,9 +523,9 @@ steps_list:
   TAKE_WHEN_TWO_STONE000:
     - step: "move joint6"
       arm:
-        joints: [ 0.276, 0.013, -0.276, -1.541, 1.656, 0.007 ]
+        joints: [ 0.276, 0., -0.266, -1.5407632953407409, 1.656, -0.0031957346223543404  ]
         common:
-          <<: *NORMALLY
+          <<: *SLOWLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "home with no stone"
