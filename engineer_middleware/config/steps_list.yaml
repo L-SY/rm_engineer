@@ -15,7 +15,7 @@ common:
 
   tolerance:
     small_tolerance: &SMALL_TOLERANCE
-      tolerance_joints: [ 0.008, 0.008, 0.008, 0.1, 0.1, 0.01 ]
+      tolerance_joints: [ 0.008, 0.008, 0.008, 0.01, 0.01, 0.01 ]
     normal_tolerance: &NORMAL_TOLERANCE
       tolerance_joints: [ 0.008, 0.008, 0.008, 0.1, 0.1, 0.1 ]
     bigger_tolerance: &BIGGER_TOLERANCE
@@ -257,7 +257,7 @@ steps_list:
         common:
           <<: *NORMALLY
         tolerance:
-          <<: *NORMAL_TOLERANCE
+          <<: *SMALL_TOLERANCE
     - step: "change gripper state"
       gripper:
           <<: *OPEN_GRIPPER
@@ -316,11 +316,11 @@ steps_list:
   LF_SMALL_ISLAND00:
     - step: "arm ready to get stone"
       arm:
-        joints: [ 0.40, 0.031, 0.2714, -1.518, -0.043, 3.217387077106941 ]
+        joints: [ 0.43, 0.031, 0.2714, -1.518, -0.043, 3.217387077106941 ]
         common:
           <<: *NORMALLY
         tolerance:
-          <<: *NORMAL_TOLERANCE
+          <<: *SMALL_TOLERANCE
     - step: "change gripper state"
       gripper:
         <<: *OPEN_GRIPPER
@@ -365,7 +365,7 @@ steps_list:
         common:
           <<: *NORMALLY
         tolerance:
-          <<: *BIGGER_TOLERANCE
+          <<: *SMALL_TOLERANCE
     - step: "change gripper state"
       gripper:
         <<: *OPEN_GRIPPER
@@ -404,17 +404,17 @@ steps_list:
   RT_SMALL_ISLAND00:
     - step: "arm ready"
       arm:
-        joints: [0.406, 0.031, -0.243350, -1.509, -0.008, 3.284460]
+        joints: [0.436, 0.031, -0.243350, -1.509, -0.008, 3.284460]
         common:
           <<: *NORMALLY
         tolerance:
-          <<: *NORMAL_TOLERANCE
+          <<: *SMALL_TOLERANCE
     - step: "change gripper state"
       gripper:
           <<: *OPEN_GRIPPER
     - step: "arm get stone"
       arm:
-        joints: [ 0.279, 0.031, -0.243350, -1.509, -0.008, 3.284460 ]
+        joints: [ 0.309, 0.031, -0.243350, -1.509, -0.008, 3.284460 ]
         common:
           <<: *QUICKLY
         tolerance:
