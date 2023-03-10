@@ -279,7 +279,7 @@ steps_list:
       arm:
         joints: [0.433, 0.310, 0.005, -1.693, -0.054, 0.014]
         common:
-          <<: *NORMALLY
+          <<: *SLOWLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "arm wait state"
@@ -319,7 +319,7 @@ steps_list:
       arm:
         joints: [ 0.452, 0.0316, 0.2012, -1.436, 0.011, 1.0 ]
         common:
-          <<: *QUICKLY
+          <<: *SLOWLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "arm wait"
@@ -366,7 +366,7 @@ steps_list:
       arm:
         joints: [ 0.438, 0.031, -0.10, -1.476, 0.001, 1.0 ]
         common:
-          <<: *QUICKLY
+          <<: *SLOWLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "arm back"
@@ -407,7 +407,7 @@ steps_list:
       arm:
         joints:  [0.453, 0.031, -0.288, -1.460, -0.027, 1.0]
         common:
-          <<: *QUICKLY
+          <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "arm back"
@@ -430,7 +430,7 @@ steps_list:
   STORE_WHEN_ZERO_STONE00:
     - step: "move joint6"
       arm:
-        joints: [ 0.107, -0.03, -0.225, -1.487, 1.581, 1.601 ]
+        joints: [ 0.107, -0.03, -0.225, -1.487, 1.581, 1.969710 ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -460,7 +460,7 @@ steps_list:
   STORE_WHEN_ONE_STONE00:
     - step: "move joint6"
       arm:
-        joints: [ 0.309, -0.03, -0.225, -1.487, 1.581, 1.601 ]
+        joints: [ 0.309, -0.03, -0.225, -1.487, 1.581, 1.969710 ]
         common:
           <<: *NORMALLY
         tolerance:
