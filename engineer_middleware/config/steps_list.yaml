@@ -18,6 +18,8 @@ common:
       tolerance_joints: [ 0.008, 0.008, 0.008, 0.1, 0.1, 0.1 ]
     bigger_tolerance: &BIGGER_TOLERANCE
       tolerance_joints: [ 0.01, 0.01, 0.01, 0.2, 0.2, 0.2 ]
+    test_tolerance: &TEST_TOLERANCE
+      tolerance_joints: [ 0.04, 0.1, 0.04, 1.0, 1.0, 1.5 ]
 
   gripper:
     open_gripper: &OPEN_GRIPPER
@@ -291,33 +293,33 @@ steps_list:
   LF_SMALL_ISLAND00:
     - step: "arm ready to get stone"
       arm:
-        joints: [0.381, 0.031, 0.216, -1.518, -0.043, 3.217387077106941]
+        joints: [ 0.40, 0.031, 0.2714, -1.518, -0.043, 3.217387077106941 ]
         common:
           <<: *NORMALLY
         tolerance:
-          <<: *BIGGER_TOLERANCE
+          <<: *NORMAL_TOLERANCE
     - step: "change gripper state"
       gripper:
         <<: *OPEN_GRIPPER
     - step: "move arm down to gain stone"
       arm:
-        joints: [ 0.279, 0.031, 0.216, -1.518, -0.043, 3.217387077106941 ]
+        joints: [ 0.279, 0.031, 0.2714, -1.518, -0.043, 3.217387077106941 ]
         common:
-          <<: *NORMALLY
+          <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "move arm up"
       arm:
-        joints: [ 0.453, 0.031, 0.206, -1.518, -0.043, 3.217387077106941 ]
+        joints: [ 0.458, 0.031, 0.2012, -1.518, -0.043, 3.217387077106941 ]
         common:
-          <<: *NORMALLY
+          <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "reversal stone"
       arm:
-        joints: [0.453, 0.0316, 0.206, -1.436, 0.011, 1.0]
+        joints: [ 0.452, 0.0316, 0.2012, -1.436, 0.011, 1.0 ]
         common:
-          <<: *SLOWLY
+          <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "arm wait"
@@ -350,27 +352,26 @@ steps_list:
       arm:
         joints: [0.290, 0.031, 0.009, -1.522, -0.001, 3.217387077106941]
         common:
-          <<: *NORMALLY
+          <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "arm up stone"
       arm:
         joints: [0.435, 0.031, -0.10, -1.4992037839, 0.008332834876478845, 3.2080808812697885]
         common:
-          <<: *NORMALLY
+          <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "reversal stone"
       arm:
         joints: [ 0.438, 0.031, -0.10, -1.476, 0.001, 1.0 ]
         common:
-          <<: *SLOWLY
+          <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "arm back"
       arm:
         <<: *PICK_WAIT
-
 
     ###################    RT    ################
   RT_SMALL_ISLAND0:
@@ -380,33 +381,33 @@ steps_list:
   RT_SMALL_ISLAND00:
     - step: "arm ready"
       arm:
-        joints: [0.386, 0.031, -0.225050, -1.509, -0.008, 3.217387077106941]
+        joints: [0.406, 0.031, -0.243350, -1.509, -0.008, 3.217387077106941]
         common:
           <<: *NORMALLY
         tolerance:
-          <<: *BIGGER_TOLERANCE
+          <<: *NORMAL_TOLERANCE
     - step: "change gripper state"
       gripper:
           <<: *OPEN_GRIPPER
     - step: "arm get stone"
       arm:
-        joints: [ 0.279, 0.031, -0.225050, -1.509, -0.008, 3.217387077106941 ]
+        joints: [ 0.279, 0.031, -0.243350, -1.509, -0.008, 3.217387077106941 ]
         common:
-          <<: *NORMALLY
+          <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "arm up stone"
       arm:
         joints: [ 0.453, 0.031, -0.280050, -1.460, -0.027, 3.217387077106941 ]
         common:
-          <<: *NORMALLY
+          <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "reversal stone"
       arm:
         joints:  [0.453, 0.031, -0.288, -1.460, -0.027, 1.0]
         common:
-          <<: *SLOWLY
+          <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "arm back"
