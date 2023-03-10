@@ -14,6 +14,8 @@ common:
       timeout: 4.
 
   tolerance:
+    small_tolerance: &SMALL_TOLERANCE
+      tolerance_joints: [ 0.008, 0.008, 0.008, 0.1, 0.1, 0.01 ]
     normal_tolerance: &NORMAL_TOLERANCE
       tolerance_joints: [ 0.008, 0.008, 0.008, 0.1, 0.1, 0.1 ]
     bigger_tolerance: &BIGGER_TOLERANCE
@@ -201,9 +203,9 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "get ground stone"
       arm:
-        joints: [-0.010000, 0.013219784447105642, 0.006857136886879611, -0.0987931242925928, -0.00996003076049834, 0.14214867160681566]
+        joints: [-0.004100, 0.013219784447105642, 0.006857136886879611, -0.0987931242925928, -0.00996003076049834, 0.076470]
         common:
-          <<: *SLOWLY
+          <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
   GROUND_STONE0:
@@ -290,6 +292,27 @@ steps_list:
     - step: "arm wait"
       arm:
         <<: *PICK_WAIT
+  TEST_SMALL_ISLAND00:
+    - step: "add scenes"
+      scene_name: MID_SMALL_ISLAND
+    - step: "arm ready to get stone"
+      arm:
+        joints:  [ 0.40, 0.031, 0.2714, -1.518, -0.043, 3.217387077106941 ]
+        common:
+          <<: *NORMALLY
+        tolerance:
+          <<: *TEST_TOLERANCE
+
+  NORMALLY_SMALL_ISLAND00:
+    - step: "add scenes"
+      scene_name: MID_SMALL_ISLAND
+    - step: "arm ready to get stone"
+      arm:
+        joints: [ 0.40, 0.031, 0.2714, -1.518, -0.043, 3.217387077106941 ]
+        common:
+          <<: *NORMALLY
+        tolerance:
+          <<: *NORMAL_TOLERANCE
   LF_SMALL_ISLAND00:
     - step: "arm ready to get stone"
       arm:
@@ -381,7 +404,7 @@ steps_list:
   RT_SMALL_ISLAND00:
     - step: "arm ready"
       arm:
-        joints: [0.406, 0.031, -0.243350, -1.509, -0.008, 3.217387077106941]
+        joints: [0.406, 0.031, -0.243350, -1.509, -0.008, 3.284460]
         common:
           <<: *NORMALLY
         tolerance:
@@ -391,14 +414,14 @@ steps_list:
           <<: *OPEN_GRIPPER
     - step: "arm get stone"
       arm:
-        joints: [ 0.279, 0.031, -0.243350, -1.509, -0.008, 3.217387077106941 ]
+        joints: [ 0.279, 0.031, -0.243350, -1.509, -0.008, 3.284460 ]
         common:
           <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "arm up stone"
       arm:
-        joints: [ 0.453, 0.031, -0.280050, -1.460, -0.027, 3.217387077106941 ]
+        joints: [ 0.453, 0.031, -0.280050, -1.460, -0.027, 3.284460 ]
         common:
           <<: *QUICKLY
         tolerance:
