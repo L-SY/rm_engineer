@@ -3,15 +3,15 @@ common:
     slowly: &SLOWLY
       speed: 0.2
       accel: 0.1
-      timeout: 10.
+      timeout: 3.
     normally: &NORMALLY
       speed: 0.4
       accel: 0.3
-      timeout: 6.
+      timeout: 3.
     quickly: &QUICKLY
       speed: 0.6
       accel: 0.6
-      timeout: 4.
+      timeout: 3.
 
   tolerance:
     small_tolerance: &SMALL_TOLERANCE
@@ -230,7 +230,7 @@ steps_list:
   SKY_BIG_ISLAND00:
     - step: "move to stone down"
       arm:
-        joints: [0.434, 0.2830, 0.0057, -1.657, -0.059, 0.0110]
+        joints: [0.434, 0.289500, 0.0057, -1.657, -0.027080, 0.0110]
         common:
           <<: *NORMALLY
         tolerance:
