@@ -811,3 +811,7 @@ steps_list:
     - step: "home two stone"
       arm:
         <<: *HOME_THREE_STONE
+  STOP_REVERSAL:
+    - step: "open gripper"
+      gripper:
+        <<: *CLOSE_GRIPPER
