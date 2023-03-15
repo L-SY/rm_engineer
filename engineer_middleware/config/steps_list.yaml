@@ -636,9 +636,6 @@ steps_list:
            <<: *NORMALLY
         tolerance:
            <<: *NORMAL_TOLERANCE
-    - step: "change gripper state"
-      gripper:
-         <<: *OPEN_GRIPPER
   TEST00:
     - step: "change gripper state"
       gripper:
@@ -796,19 +793,52 @@ steps_list:
     - step: "open gripper close reversal"
       gripper:
         <<: *CLOSE_GRIPPER
-
   TEST_FAST:
-    - step: "arm up stone"
+    - step: "island gimbal"
+      gimbal:
+        <<: *ISLAND_POS
+    - step: "arm wait"
       arm:
-        joints: [ 0.453, 0.031, -0.280050, -1.460, -0.027, 3.100000 ]
+        <<: *PICK_WAIT
+    - step: "change gripper state"
+      gripper:
+        <<: *OPEN_GRIPPER
+    - step: "add scenes"
+      scene_name: MID_SMALL_ISLAND
+    - step: "arm ready to get stone"
+      arm:
+        joints: [ 0.4234533056100423, 0.03084413880417841, 0.00879305699769145, -1.5101404974370372, 0.004258877900558122, 3.100000 ]
+        common:
+          <<: *NORMALLY
+        tolerance:
+          <<: *NORMAL_TOLERANCE
+  TEST_FAST0:
+    - step: "arm get stone"
+      arm:
+        joints: [ 0.290, 0.031, 0.009, -1.522, -0.001, 3.100000 ]
         common:
           <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
-    - step: "move joint6"
+    - step: "arm up stone"
       arm:
-        joints: [ 0.4192, -0.03, -0.225, -1.487, 1.581, 1.6 ]
+        joints: [ 0.435, 0.031, 0.009, -1.4992037839, 0.008332834876478845, 3.100000 ]
         common:
-          <<: *SLOWLY
+          <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
+  TEST_FAST00:
+    - step: "add scenes"
+      scene_name: MID_SMALL_ISLAND
+    - step: "add scenes"
+      scene_name: JOINT_STONE
+    - step: "move joint6"
+      arm:
+        joints: [ 0.4192, -0.03, -0.255050, -1.487, 1.581, 1.6 ]
+        common:
+          <<: *QUICKLY
+        tolerance:
+          <<: *BIGGER_TOLERANCE
+    - step: "change gripper state"
+      gripper:
+        <<: *CLOSE_GRIPPER
