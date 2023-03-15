@@ -179,7 +179,7 @@ scenes_list:
         type: box
         dimension: [ 0.300, 0.600, 0.001 ]
       pose:
-        position: [ 0.505, 0., 0.600 ]
+        position: [ 0.505, 0., 0.500 ]
         orientation: [ 0., 0., 0., 0. ]
       attach: false
 
