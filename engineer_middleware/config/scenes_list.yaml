@@ -173,29 +173,29 @@ scenes_list:
       attach: false
 
   MID_SMALL_ISLAND:
-    - id: "stone_up"
-      frame_id: "base_link"
-      primitive:
-        type: box
-        dimension: [ 0.300, 0.600, 0.001 ]
-      pose:
-        position: [ 0.505, 0., 0.500 ]
-        orientation: [ 0., 0., 0., 0. ]
-      attach: false
+#    - id: "stone_up"
+#      frame_id: "base_link"
+#      primitive:
+#        type: box
+#        dimension: [ 0.300, 0.600, 0.001 ]
+#      pose:
+#        position: [ 0.505, 0., 0.450 ]
+#        orientation: [ 0., 0., 0., 0. ]
+#      attach: false
     - id: "front"
       frame_id: "base_link"
       primitive:
         type: box
-        dimension: [ 0.001, 0.600, 0.001 ]
+        dimension: [ 0.001, 0.600, 0.55 ]
       pose:
-        position: [ 0.35, 0., 0.500 ]
+        position: [ 0.35, 0., 0.3 ]
         orientation: [ 0., 0., 0., 0. ]
       attach: false
     - id: "back"
       frame_id: "base_link"
       primitive:
         type: box
-        dimension: [ 0.001, 0.600, 0.001 ]
+        dimension: [ 0.001, 0.6, 0.4 ]
       pose:
         position: [ 0.65, 0., 0.500 ]
         orientation: [ 0., 0., 0., 0. ]
@@ -228,9 +228,9 @@ scenes_list:
       frame_id: "link6"
       primitive:
         type: box
-        dimension: [ 0.18, 0.18, 0.18 ]
+        dimension: [ 0.16, 0.16, 0.16 ]
       pose:
-        position: [ 0.18, 0., -0.03 ]
+        position: [ 0.16, 0., -0.03 ]
         orientation: [ 0., 0., 0., 0. ]
       attach: true
 
