@@ -64,7 +64,7 @@ common:
   gimbal:
     sky_gimbal: &SKY_POS
       frame: gimbal_base
-      position: [ 2, 0.15, 0.5 ]
+      position: [ 2, 0.01, 0.5 ]
     back_gimbal: &BACK_POS
       frame: gimbal_base
       position: [ -2 ,0.01, 0. ]
@@ -442,7 +442,7 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "move joint1 and 3"
       arm:
-        joints: [ 0.309, 0.02, -0.225, -1.487, 1.581, 0.007 ]
+        joints: [ 0.309, 0.02, -0.25845, -1.487, 1.581, 0.007 ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -451,7 +451,7 @@ steps_list:
   STORE_WHEN_ZERO_STONE00:
     - step: "move joint6"
       arm:
-        joints: [ 0.309, -0.03, -0.225, -1.487, 1.581, 1.6 ]
+        joints: [ 0.309, -0.03, -0.25845, -1.487, 1.581, 1.6 ]
         common:
           <<: *SLOWLY
         tolerance:
@@ -472,7 +472,7 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "move joint1 and 3"
       arm:
-        joints: [ 0.309, 0.02, -0.225, -1.487, 1.581, 0.007  ]
+        joints: [ 0.309, 0.02, -0.25845, -1.487, 1.581, 0.007  ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -481,7 +481,7 @@ steps_list:
   STORE_WHEN_ONE_STONE00:
     - step: "move joint6"
       arm:
-        joints: [ 0.309, -0.03, -0.225, -1.487, 1.581, 1.6 ]
+        joints: [ 0.309, -0.03, -0.25845, -1.487, 1.581, 1.6 ]
         common:
           <<: *SLOWLY
         tolerance:
@@ -501,7 +501,7 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "move joint1 and 3"
       arm:
-        joints: [ 0.4192, 0.02, -0.225, -1.487, 1.581, 0.007 ]
+        joints: [ 0.4192, 0.02, -0.25845, -1.487, 1.581, 0.007 ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -510,7 +510,7 @@ steps_list:
   STORE_WHEN_TWO_STONE00:
     - step: "move joint6"
       arm:
-        joints: [ 0.4192, -0.03, -0.225, -1.487, 1.581, 1.6 ]
+        joints: [ 0.4192, -0.03, -0.25845, -1.487, 1.581, 1.6 ]
         common:
           <<: *SLOWLY
         tolerance:
@@ -695,14 +695,14 @@ steps_list:
       scene_name: MID_SMALL_ISLAND
     - step: "move joint1 and 3"
       arm:
-        joints: [ 0.309, -0.004, -0.225, -1.487, 1.581, 0.007 ]
+        joints: [ 0.309, -0.004, -0.25845, -1.487, 1.581, 0.007 ]
         common:
           <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "move joint6"
       arm:
-        joints: [ 0.309, -0.004, -0.225, -1.487, 1.581, 1.6 ]
+        joints: [ 0.309, -0.004, -0.25845, -1.487, 1.581, 1.6 ]
         common:
           <<: *SLOWLY
         tolerance:
@@ -743,14 +743,14 @@ steps_list:
           <<: *BIGGER_TOLERANCE
     - step: "move joint1 and 3"
       arm:
-        joints: [ 0.309, -0.004, -0.225, -1.487, 1.581, 0.007 ]
+        joints: [ 0.309, -0.004, -0.25845, -1.487, 1.581, 0.007 ]
         common:
           <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "move joint6"
       arm:
-        joints: [ 0.309, -0.004, -0.225, -1.487, 1.581, 1.6 ]
+        joints: [ 0.309, -0.004, -0.25845, -1.487, 1.581, 1.6 ]
         common:
           <<: *SLOWLY
         tolerance:
@@ -791,14 +791,14 @@ steps_list:
           <<: *BIGGER_TOLERANCE
     - step: "move joint1 and 3"
       arm:
-        joints: [ 0.4192, -0.004, -0.225, -1.487, 1.581, 0.007 ]
+        joints: [ 0.4192, -0.004, -0.25845, -1.487, 1.581, 0.007 ]
         common:
           <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "move joint6"
       arm:
-        joints: [ 0.4192, -0.004, -0.225, -1.487, 1.581, 1.6 ]
+        joints: [ 0.4192, -0.004, -0.25845, -1.487, 1.581, 1.6 ]
         common:
           <<: *SLOWLY
         tolerance:
