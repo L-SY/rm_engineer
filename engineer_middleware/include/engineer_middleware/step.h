@@ -70,6 +70,8 @@ public:
       gimbal_motion_ = new GimbalMotion(step["gimbal"], gimbal_pub);
     if (step.hasMember("gripper"))
       gpio_motion_ = new GpioMotion(step["gripper"], gpio_pub);
+    if (step.hasMember("vis"))
+      vis_motion_ = new VisMotion(step["arm"], arm_group, tf);
     if (step.hasMember("scene_name"))
     {
       for (XmlRpc::XmlRpcValue::ValueStruct::const_iterator it = scenes.begin(); it != scenes.end(); ++it)
@@ -77,7 +79,7 @@ public:
           planning_scene_ = new PlanningScene(it->second, arm_group);
     }
   }
-  bool move()
+  bool move(geometry_msgs::TwistStamped test)
   {
     bool success = true;
     if (arm_motion_)
@@ -92,6 +94,8 @@ public:
       success &= gimbal_motion_->move();
     if (gpio_motion_)
       success &= gpio_motion_->move();
+    if (vis_motion_)
+      success &= vis_motion_->moveing(test);
     if (planning_scene_)
       planning_scene_->add();
     return success;
@@ -104,6 +108,8 @@ public:
       hand_motion_->stop();
     if (chassis_motion_)
       chassis_motion_->stop();
+    if (vis_motion_)
+      vis_motion_->stop();
   }
 
   void deleteScene()
@@ -127,6 +133,8 @@ public:
       success &= chassis_motion_->isFinish();
     if (gimbal_motion_)
       success &= gimbal_motion_->isFinish();
+    if (vis_motion_)
+      success &= vis_motion_->isFinish();
     return success;
   }
   bool checkTimeout(ros::Duration period)
@@ -142,6 +150,8 @@ public:
       success &= chassis_motion_->checkTimeout(period);
     if (gimbal_motion_)
       success &= gimbal_motion_->checkTimeout(period);
+    if (vis_motion_)
+      success &= vis_motion_->checkTimeout(period);
     return success;
   }
 
@@ -159,6 +169,7 @@ private:
   GimbalMotion* gimbal_motion_{};
   GpioMotion* gpio_motion_{};
   PlanningScene* planning_scene_{};
+  VisMotion* vis_motion_{};
   moveit::planning_interface::PlanningSceneInterface planning_scene_interface_;
   moveit::planning_interface::MoveGroupInterface& arm_group_;
 };

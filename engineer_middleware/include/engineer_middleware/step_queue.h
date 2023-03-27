@@ -60,7 +60,7 @@ public:
     for (int i = 0; i < steps.size(); ++i)
       queue_.emplace_back(steps[i], scenes, tf, arm_group, chassis_interface, hand_pub, card_pub, gimbal_pub, gpio_pub);
   }
-  bool run(actionlib::SimpleActionServer<rm_msgs::EngineerAction>& as)
+  bool run(actionlib::SimpleActionServer<rm_msgs::EngineerAction>& as, geometry_msgs::TwistStamped test)
   {
     if (queue_.empty())
     {
@@ -74,7 +74,7 @@ public:
     for (size_t i = 0; i < queue_.size(); ++i)
     {
       ros::Time start = ros::Time::now();
-      if (!queue_[i].move())
+      if (!queue_[i].move(test))
         return false;
       ROS_INFO("Start step: %s", queue_[i].getName().c_str());
       while (!queue_[i].isFinish())
