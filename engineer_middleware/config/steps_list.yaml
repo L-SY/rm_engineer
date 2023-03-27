@@ -80,6 +80,8 @@ common:
     exchange_pos: &EXCHANGE_POS
       frame: gimbal_base
       position: [ 0.01,-3, -1.0 ]
+
+
   reversal:
     velocity_stop: &VELOCITY_STOP
       mode: "VELOCITY"
@@ -89,10 +91,10 @@ common:
       values: [ 0.,0.,2.,0.,0.,0. ]
     velocity_z_in: &VELOCITY_Z_IN
       mode: "VELOCITY"
-      values: [ 0.,0.,-3.,0.,-0.9.,0. ]
+      values: [ 0.,0.,-3.,0.,-0.9,0. ]
     position_z_out: &POSITION_Z_OUT
       mode: "POSITION"
-      values: [ 0.,0.,10.,0.,0..,0. ]
+      values: [ 0.,0.,10.,0.,0.,0. ]
 steps_list:
   ################### COMMON STEP####################
   DELETE_SCENE:
