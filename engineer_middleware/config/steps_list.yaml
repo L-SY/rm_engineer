@@ -7,11 +7,15 @@ common:
     normally: &NORMALLY
       speed: 0.4
       accel: 0.3
-      timeout: 3.
+      timeout: 8.
+    joint6_normally: &JOINT6_NORMALLY
+      speed: 0.4
+      accel: 0.3
+      timeout: 2.
     quickly: &QUICKLY
       speed: 0.6
       accel: 0.6
-      timeout: 3.
+      timeout: 7.
 
   tolerance:
     small_tolerance: &SMALL_TOLERANCE
@@ -19,10 +23,67 @@ common:
     normal_tolerance: &NORMAL_TOLERANCE
       tolerance_joints: [ 0.008, 0.008, 0.008, 0.1, 0.1, 0.1 ]
     bigger_tolerance: &BIGGER_TOLERANCE
-      tolerance_joints: [ 0.01, 0.01, 0.01, 0.2, 0.2, 0.2 ]
+      tolerance_joints: [ 0.01, 0.01, 0.01, 0.3, 0.2, 0.2 ]
     test_tolerance: &TEST_TOLERANCE
       tolerance_joints: [ 0.01, 0.01, 0.01, 0.2, 0.2, 0.01 ]
 
+  joint1:
+    down_position: &JOINT1_DOWN_POSITION
+       -0.029600
+    zero_stone_position: &JOINT1_ZERO_STONE_POSITION
+       0.02
+    one_stone_position: &JOINT1_ONE_STONE_POSITION
+       0.107
+    get_stone_position: &JOINT1_GET_STONE_POSITION
+       0.2539
+    two_stone_position: &JOINT1_TWO_STONE_POSITION
+       0.309
+    three_stone_position: &JOINT1_THREE_STONE_POSITION
+       0.4192
+    up_position: &JOINT1_UP_POSITION
+       0.438
+    ready_to_get_stone: &JOINT1_READY_TO_GET_STONE_POSITION
+       0.423
+  joint2:
+    back_position: &JOINT2_BACK_POSITION
+       -0.03
+    recently_position: &JOINT2_RECENTLY_POSITION
+       0.013
+    sky_position: &JOINT2_SKY_POSITION
+       0.30500
+    furthest_position: &JOINT2_FURTHEST_POSITION
+       0.310
+  joint3:
+    mid_position: &JOINT3_MID_POSITION
+      0.007
+    sky_ground_store_position: &JOINT3_SKY_GROUND_STORE_POSITION
+      -0.27845
+    take_store_position: &JOINT3_TAKE_STORE_POSITION
+      -0.256
+  joint4:
+    up_position: &JOINT4_UP_POSITION
+      -1.660
+    ready_position: &JOINT4_READY_POSITION
+      -1.460
+    down_position: &JOINT4_DOWN_POSITION
+      0.041900
+
+  joint5:
+    left_position: &JOINT5_LEFT_POSITION
+      1.527
+    left_more_position: &JOINT5_LEFT_MORE_POSITION
+      1.656
+    mid_position: &JOINT5_MID_POSITION
+      -0.027080
+  joint6:
+    up_position: &JOINT6_UP_POSITION
+      -0.028710
+    down_position: &JOINT6_DOWN_POSITION
+      3.208180
+    back_position:   &JOINT6_BACK_POSITION
+      1.443810
+    hold_stone: &JOINT6_HOLD_STONE_POSITION
+      -0.194
   gripper:
     open_gripper: &OPEN_GRIPPER
       state: false
@@ -31,31 +92,31 @@ common:
 
   arm:
     home_zero_stone: &HOME_ZERO_STONE
-      joints: [ 0.02, 0.013, 0.007, -1.487, 1.581, -0.194 ]
+      joints: [*JOINT1_ZERO_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_MID_POSITION, -1.487, *JOINT5_LEFT_POSITION, *JOINT6_HOLD_STONE_POSITION]
       common:
         <<: *NORMALLY
       tolerance:
         <<: *NORMAL_TOLERANCE
     home_one_stone: &HOME_ONE_STONE
-      joints: [ 0.107, 0.013, 0.007, -1.487, 1.581, -0.194 ]
+      joints: [*JOINT1_ONE_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_MID_POSITION, -1.487, *JOINT5_LEFT_POSITION, *JOINT6_HOLD_STONE_POSITION]
       common:
         <<: *NORMALLY
       tolerance:
         <<: *NORMAL_TOLERANCE
     home_two_stone: &HOME_TWO_STONE
-      joints: [ 0.309, 0.013, 0.007, -1.487, 1.581, -0.194 ]
+      joints: [*JOINT1_TWO_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_MID_POSITION, -1.487, *JOINT5_LEFT_POSITION, *JOINT6_HOLD_STONE_POSITION]
       common:
         <<: *NORMALLY
       tolerance:
         <<: *NORMAL_TOLERANCE
     home_three_stone: &HOME_THREE_STONE
-      joints: [ 0.4192, 0.013, 0.007, -1.487, 1.581, -0.194 ]
+      joints: [ *JOINT1_THREE_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_MID_POSITION, -1.487, *JOINT5_LEFT_POSITION, *JOINT6_HOLD_STONE_POSITION ]
       common:
         <<: *NORMALLY
       tolerance:
         <<: *NORMAL_TOLERANCE
-    pick_wait: &PICK_WAIT
-      joints: [ 0.438, 0.027, 0.005, -1.525, 1.616, -0.078 ]
+    pick_wait:  &PICK_WAIT
+      joints: [*JOINT1_UP_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_MID_POSITION, -1.525, *JOINT5_LEFT_POSITION, *JOINT6_UP_POSITION]
       common:
         <<: *NORMALLY
       tolerance:
@@ -76,7 +137,7 @@ common:
       position: [ 2 ,0.01, -0.2 ]
     reversal_pos: &REVERSAL_POS
       frame: gimbal_base
-      position: [ 2,0.01, 0. ]
+      position: [ 2,0.01, 0.]
     exchange_pos: &EXCHANGE_POS
       frame: gimbal_base
       position: [ 0.01,-3, -1.0 ]
@@ -203,27 +264,50 @@ steps_list:
 
 
   ################### GROUND ####################
-  GROUND_STONE:
+  GROUND_STONE0:
     - step: "change gripper state"
       gripper:
         <<: *OPEN_GRIPPER
     - step: "get ground stone"
       arm:
-        joints: [ -0.004100, 0.013219784447105642, 0.006857136886879611, 0.041900, -0.00996003076049834, -0.081300 ]
+        joints: [*JOINT1_DOWN_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_MID_POSITION, *JOINT4_DOWN_POSITION, *JOINT5_MID_POSITION, *JOINT6_UP_POSITION]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
-  GROUND_STONE0:
-    - step: "arm wait state"
+  GROUND_STONE00:
+    - step: "move joint1 and 3"
+      arm:
+        joints: [ *JOINT1_TWO_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_SKY_GROUND_STORE_POSITION, -1.487, *JOINT5_LEFT_POSITION, *JOINT6_UP_POSITION ]
+        common:
+          <<: *NORMALLY
+        tolerance:
+          <<: *BIGGER_TOLERANCE
+    - step: "reversal z in"
+      reversal:
+        <<: *VELOCITY_Z_IN
+    - step: "move joint6"
+      arm:
+        joints: [ *JOINT1_TWO_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_SKY_GROUND_STORE_POSITION, -1.487, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
+        common:
+          <<: *SLOWLY
+        tolerance:
+          <<: *BIGGER_TOLERANCE
+    - step: "close gripper"
+      gripper:
+        <<: *CLOSE_GRIPPER
+    - step: "home with no stone"
       arm:
         <<: *HOME_ONE_STONE
+    - step: "reversal stop"
+      reversal:
+        <<: *VELOCITY_STOP
 
   ################### EXCHANGE ####################
   EXCHANGE_WAIT:
     - step: "move to exchange wait state"
       arm:
-        joints: [ 0.0679, 0.03605, 0.0066, -1.6025, 0.0131, 0.0785 ]
+        joints: [*JOINT1_ONE_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_MID_POSITION, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_UP_POSITION]
         common:
           <<: *NORMALLY
         tolerance:
@@ -234,9 +318,9 @@ steps_list:
       arm:
         <<: *PICK_WAIT
   SKY_BIG_ISLAND00:
-    - step: "move to stone down"
+    - step: "move to wait stone down"
       arm:
-        joints: [ 0.434, 0.30500, 0.0057, -1.657, -0.027080, -0.028710 ]
+        joints: [*JOINT1_UP_POSITION, *JOINT2_SKY_POSITION, *JOINT3_MID_POSITION, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_UP_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -247,7 +331,7 @@ steps_list:
   SKY_BIG_ISLAND000:
     - step: "move joint1 and 3"
       arm:
-        joints: [ 0.309, 0.02, -0.27845, -1.487, 1.581, 0.007 ]
+        joints: [ *JOINT1_TWO_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_SKY_GROUND_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_UP_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -257,7 +341,7 @@ steps_list:
         <<: *VELOCITY_Z_IN
     - step: "move joint6"
       arm:
-        joints: [ 0.309, -0.03, -0.27845, -1.487, 1.581, 1.6 ]
+        joints: [ *JOINT1_TWO_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_SKY_GROUND_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *SLOWLY
         tolerance:
@@ -282,7 +366,7 @@ steps_list:
       scene_name: MID_BIG_ISLAND
     - step: "arm ready to get"
       arm:
-        joints: [ 0.431, 0.310, 0.005, -1.693, -0.054, 3.126690 ]
+        joints: [*JOINT1_READY_TO_GET_STONE_POSITION, *JOINT2_FURTHEST_POSITION, *JOINT3_MID_POSITION, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION]
         common:
           <<: *NORMALLY
         tolerance:
@@ -294,21 +378,21 @@ steps_list:
   BIG_ISLAND000:
     - step: "get stone"
       arm:
-        joints: [ 0.299, 0.310, 0.005, -1.693, -0.054, 3.208 ]
+        joints: [*JOINT1_GET_STONE_POSITION, *JOINT2_FURTHEST_POSITION, *JOINT3_MID_POSITION, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *NORMAL_TOLERANCE
     - step: "up stone"
       arm:
-        joints: [ 0.435, 0.310, 0.005, -1.693, -0.054, 3.208 ]
+        joints: [*JOINT1_UP_POSITION, *JOINT2_FURTHEST_POSITION, *JOINT3_MID_POSITION, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *NORMAL_TOLERANCE
     - step: "reversal stone"
       arm:
-        joints: [ 0.433, 0.310, 0.005, -1.693, -0.054, 0.014 ]
+        joints: [*JOINT1_UP_POSITION, *JOINT2_FURTHEST_POSITION, *JOINT3_MID_POSITION, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_UP_POSITION]
         common:
           <<: *QUICKLY
         tolerance:
@@ -325,9 +409,11 @@ steps_list:
       arm:
         <<: *PICK_WAIT
   LF_SMALL_ISLAND00:
+    - step: "add scenes"
+      scene_name: MID_SMALL_ISLAND
     - step: "arm ready to get stone"
       arm:
-        joints: [ 0.43, 0.031, 0.2714, -1.518, -0.043, 3.100000 ]
+        joints: [ *JOINT1_READY_TO_GET_STONE_POSITION, *JOINT2_RECENTLY_POSITION, 0.2714, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -337,21 +423,21 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "move arm down to gain stone"
       arm:
-        joints: [ 0.279, 0.031, 0.2714, -1.518, -0.043, 3.100000 ]
+        joints: [ *JOINT1_GET_STONE_POSITION, *JOINT2_RECENTLY_POSITION, 0.2714, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "move arm up"
       arm:
-        joints: [ 0.458, 0.031, 0.2012, -1.518, -0.043, 3.100000 ]
+        joints: [ *JOINT1_UP_POSITION, *JOINT2_RECENTLY_POSITION, 0.2012, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION ]
         common:
           <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "reversal stone"
       arm:
-        joints: [ 0.452, 0.0316, 0.2012, -1.436, 0.011, 1.0 ]
+        joints: [ *JOINT1_UP_POSITION, *JOINT2_RECENTLY_POSITION, 0.2012, *JOINT4_UP_POSITION, 0.011, 1.0 ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -375,7 +461,7 @@ steps_list:
       scene_name: MID_SMALL_ISLAND
     - step: "arm ready to get stone"
       arm:
-        joints: [ 0.4234533056100423, 0.03084413880417841, 0.00879305699769145, -1.5101404974370372, 0.004258877900558122, 3.100000 ]
+        joints: [*JOINT1_READY_TO_GET_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_MID_POSITION, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION]
         common:
           <<: *NORMALLY
         tolerance:
@@ -387,21 +473,21 @@ steps_list:
   SMALL_ISLAND000:
     - step: "arm get stone"
       arm:
-        joints: [ 0.290, 0.031, 0.009, -1.522, -0.001, 3.100000 ]
+        joints: [*JOINT1_GET_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_MID_POSITION, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "arm up stone"
       arm:
-        joints: [ 0.435, 0.031, -0.10, -1.4992037839, 0.008332834876478845, 3.100000 ]
+        joints: [*JOINT1_UP_POSITION, *JOINT2_RECENTLY_POSITION, -0.10, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION]
         common:
           <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "reversal stone"
       arm:
-        joints: [ 0.438, 0.031, -0.10, -1.476, 0.001, 1.0 ]
+        joints: [ *JOINT1_UP_POSITION, *JOINT2_RECENTLY_POSITION, -0.10, *JOINT4_UP_POSITION, 0.001, 1.0 ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -420,9 +506,11 @@ steps_list:
       arm:
         <<: *PICK_WAIT
   RT_SMALL_ISLAND00:
+    - step: "add scenes"
+      scene_name: MID_SMALL_ISLAND
     - step: "arm ready"
       arm:
-        joints: [ 0.436, 0.031, -0.243350, -1.509, -0.008, 3.100000 ]
+        joints: [*JOINT1_READY_TO_GET_STONE_POSITION, *JOINT2_RECENTLY_POSITION, -0.243350, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION]
         common:
           <<: *NORMALLY
         tolerance:
@@ -432,21 +520,21 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "arm get stone"
       arm:
-        joints: [ 0.309, 0.031, -0.243350, -1.509, -0.008, 3.100000 ]
+        joints: [ *JOINT1_GET_STONE_POSITION, *JOINT2_RECENTLY_POSITION, -0.243350, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "arm up stone"
       arm:
-        joints: [ 0.453, 0.031, -0.280050, -1.460, -0.027, 3.100000 ]
+        joints: [ *JOINT1_UP_POSITION, *JOINT2_RECENTLY_POSITION, -0.280050, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION ]
         common:
           <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "reversal stone"
       arm:
-        joints: [ 0.453, 0.031, -0.288, -1.460, -0.027, 1.0 ]
+        joints:  [*JOINT1_UP_POSITION, *JOINT2_RECENTLY_POSITION, -0.288, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, 1.0]
         common:
           <<: *NORMALLY
         tolerance:
@@ -462,19 +550,17 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "move joint1 and 3"
       arm:
-        joints: [ 0.309, 0.02, -0.25845, -1.487, 1.581, 0.007 ]
+        joints: [ *JOINT1_TWO_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_UP_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
-
-  STORE_WHEN_ZERO_STONE00:
     - step: "REVERSAL Z IN "
       reversal:
         <<: *VELOCITY_Z_IN
     - step: "move joint6"
       arm:
-        joints: [ 0.309, -0.03, -0.25845, -1.487, 1.581, 1.6 ]
+        joints: [ *JOINT1_TWO_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *SLOWLY
         tolerance:
@@ -487,7 +573,7 @@ steps_list:
         <<: *HOME_TWO_STONE
     - step: "REVERSAL Z IN "
       reversal:
-        <<: *VELOCITY_Z_IN
+        <<: *VELOCITY_STOP
 
   STORE_WHEN_ONE_STONE0:
     - step: "open gripper"
@@ -495,19 +581,17 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "move joint1 and 3"
       arm:
-        joints: [ 0.309, 0.02, -0.25845, -1.487, 1.581, 0.007 ]
+        joints: [ *JOINT1_TWO_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_UP_POSITION  ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
-
-  STORE_WHEN_ONE_STONE00:
     - step: "REVERSAL Z IN "
       reversal:
         <<: *VELOCITY_Z_IN
     - step: "move joint6"
       arm:
-        joints: [ 0.309, -0.03, -0.25845, -1.487, 1.581, 1.6 ]
+        joints: [ *JOINT1_TWO_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *SLOWLY
         tolerance:
@@ -520,7 +604,7 @@ steps_list:
         <<: *HOME_TWO_STONE
     - step: "REVERSAL Z IN "
       reversal:
-        <<: *VELOCITY_Z_IN
+        <<: *VELOCITY_STOP
 
   STORE_WHEN_TWO_STONE0:
     - step: "open gripper"
@@ -528,19 +612,17 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "move joint1 and 3"
       arm:
-        joints: [ 0.4192, 0.02, -0.25845, -1.487, 1.581, 0.007 ]
+        joints: [ *JOINT1_THREE_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_UP_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
-
-  STORE_WHEN_TWO_STONE00:
     - step: "REVERSAL Z IN "
       reversal:
         <<: *VELOCITY_Z_IN
     - step: "move joint6"
       arm:
-        joints: [ 0.4192, -0.03, -0.25845, -1.487, 1.581, 1.6 ]
+        joints: [ *JOINT1_THREE_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *SLOWLY
         tolerance:
@@ -562,45 +644,41 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "move joint1 and 3 and 6"
       arm:
-        joints: [ 0.02, 0.10, -0.276, -1.487, 1.581, 1.601 ]
+        joints: [ *JOINT1_ZERO_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *NORMAL_TOLERANCE
-    - step: "move joint1 and 3 and 6"
-      arm:
-        joints: [ 0.327400, 0.10, -0.276, -1.487, 1.581, 1.601 ]
-        common:
-          <<: *NORMALLY
-        tolerance:
-          <<: *BIGGER_TOLERANCE
-    - step: "REVERSAL Z OUT"
+    - step: "REVERSAL OUT"
       reversal:
         <<: *POSITION_Z_OUT
-  TAKE_WHEN_ONE_STONE00:
-    - step: "move joint2 to get stone"
+    - step: "move joint1 and 3 and 6"
       arm:
-        joints: [ 0.327400, -0.03, -0.266, -1.541, 1.656, 1.601 ]
+        joints: [ *JOINT1_TWO_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
+    - step: "move joint2 to get stone"
+      arm:
+        joints: [ 0.327400, *JOINT2_BACK_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_MORE_POSITION, *JOINT6_BACK_POSITION ]
+        common:
+          <<: *NORMALLY
+        tolerance:
+          <<: *NORMAL_TOLERANCE
     - step: "REVERSAL Z OUT"
       reversal:
         <<: *VELOCITY_Z_OUT
-  TAKE_WHEN_ONE_STONE000:
     - step: "move joint6"
       arm:
-        joints: [ 0.327400, 0., -0.266, -1.5407632953407409, 1.656, -0.4 ]
+        joints: [ 0.327400, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_HOLD_STONE_POSITION ]
         common:
-          <<: *NORMALLY
+          <<: *JOINT6_NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "REVERSAL STOP"
       reversal:
         <<: *VELOCITY_STOP
-
-  TAKE_WHEN_ONE_STONE0000:
     - step: "home with no stone"
       arm:
         <<: *HOME_ZERO_STONE
@@ -611,42 +689,38 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "move joint1 and 3 and 6"
       arm:
-        joints: [ 0.133600, 0.10, -0.276, -1.487, 1.581, 1.601 ]
+        joints: [ 0.133600, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION  ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "move joint1 and 3 and 6"
       arm:
-        joints: [ 0.327400, 0.10, -0.276, -1.487, 1.581, 1.601 ]
+        joints: [ 0.327400, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
-
-  TAKE_WHEN_TWO_STONE00:
     - step: "move joint2 to get stone"
       arm:
-        joints: [ 0.327400, -0.03, -0.266, -1.541, 1.656, 1.601 ]
+        joints: [ 0.327400, *JOINT2_BACK_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_MORE_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
-    - step: "REVERSAL Z OUT"
+    - step: "REVERSAL OUT"
       reversal:
         <<: *VELOCITY_Z_OUT
     - step: "move joint6"
       arm:
-        joints: [ 0.327400, 0., -0.266, -1.5407632953407409, 1.656, -0.4 ]
+        joints: [ 0.327400, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_HOLD_STONE_POSITION ]
         common:
-          <<: *NORMALLY
+          <<: *JOINT6_NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "REVERSAL STOP"
       reversal:
         <<: *VELOCITY_STOP
-
-  TAKE_WHEN_TWO_STONE000:
     - step: "home with no stone"
       arm:
         <<: *HOME_ONE_STONE
@@ -658,38 +732,38 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "move joint1 and 3 and 6"
       arm:
-        joints: [ 0.327400, 0.10, -0.276, -1.487, 1.581, 1.601 ]
+        joints: [ 0.327400, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
-
-  TAKE_WHEN_THREE_STONE00:
-    - step: "move joint6 to get stone"
+    - step: "move joint2 to get stone"
       arm:
-        joints: [ 0.327400, -0.03, -0.266, -1.541, 1.656, 1.601 ]
+        joints: [ 0.327400, *JOINT2_BACK_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_MORE_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
-    - step: "REVERSAL Z OUT"
+    - step: "REVERSAL OUT"
       reversal:
         <<: *VELOCITY_Z_OUT
     - step: "move joint6"
       arm:
-        joints: [ 0.327400, 0., -0.266, -1.5407632953407409, 1.656, -0.4 ]
+        joints: [ 0.327400, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_HOLD_STONE_POSITION ]
         common:
-          <<: *NORMALLY
+          <<: *JOINT6_NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "REVERSAL STOP"
       reversal:
         <<: *VELOCITY_STOP
-
-  TAKE_WHEN_THREE_STONE000:
     - step: "home with no stone"
       arm:
         <<: *HOME_TWO_STONE
+    - step: "home with no stone"
+      arm:
+        <<: *HOME_TWO_STONE
+
 
   ADD:
     - step: "add scenes"
@@ -709,7 +783,7 @@ steps_list:
       scene_name: MID_SMALL_ISLAND
     - step: "arm ready to get stone"
       arm:
-        joints: [ 0.4234533056100423, 0.03084413880417841, 0.00879305699769145, -1.5101404974370372, 0.004258877900558122, 3.100000 ]
+        joints: [ *JOINT1_READY_TO_GET_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_MID_POSITION, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -718,23 +792,23 @@ steps_list:
     - step: "change gripper state"
       gripper:
         <<: *OPEN_GRIPPER
-    - step: "arm get stone"
+    - step: "arm get  first stone"
       arm:
-        joints: [ 0.290, 0.031, 0.009, -1.522, -0.001, 3.100000 ]
+        joints: [ *JOINT1_GET_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_MID_POSITION, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION ]
         common:
           <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "arm up stone"
       arm:
-        joints: [ 0.435, 0.031, -0.10, -1.4992037839, 0.008332834876478845, 3.100000 ]
+        joints: [ *JOINT1_UP_POSITION, *JOINT2_RECENTLY_POSITION, -0.10, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION ]
         common:
           <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "reversal stone"
       arm:
-        joints: [ 0.438, 0.031, -0.10, -1.476, 0.001, 1.0 ]
+        joints: [ *JOINT1_UP_POSITION, *JOINT2_RECENTLY_POSITION, -0.10, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, 1.0 ]
         common:
           <<: *QUICKLY
         tolerance:
@@ -743,7 +817,7 @@ steps_list:
       scene_name: MID_SMALL_ISLAND
     - step: "move joint1 and 3"
       arm:
-        joints: [ 0.309, -0.004, -0.25845, -1.487, 1.581, 0.007 ]
+        joints: [ *JOINT1_TWO_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_UP_POSITION ]
         common:
           <<: *QUICKLY
         tolerance:
@@ -753,20 +827,17 @@ steps_list:
         <<: *VELOCITY_Z_IN
     - step: "move joint6"
       arm:
-        joints: [ 0.309, -0.004, -0.25845, -1.487, 1.581, 1.6 ]
+        joints: [ *JOINT1_TWO_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION]
         common:
           <<: *SLOWLY
         tolerance:
           <<: *BIGGER_TOLERANCE
-    - step: "REVERSAL STOP "
-      reversal:
-        <<: *VELOCITY_STOP
     - step: "change gripper state"
       gripper:
         <<: *CLOSE_GRIPPER
-    - step: "arm ready to get stone"
+    - step: "arm ready to get  second stone"
       arm:
-        joints: [ 0.43, 0.031, 0.2714, -1.518, -0.043, 3.100000 ]
+        joints: [ *JOINT1_READY_TO_GET_STONE_POSITION, *JOINT2_RECENTLY_POSITION, 0.2714, *JOINT4_READY_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION ]
         common:
           <<: *QUICKLY
         tolerance:
@@ -774,30 +845,33 @@ steps_list:
     - step: "change gripper state"
       gripper:
         <<: *OPEN_GRIPPER
+    - step: "REVERSAL STOP "
+      reversal:
+        <<: *VELOCITY_STOP
     - step: "move arm down to gain stone"
       arm:
-        joints: [ 0.290, 0.031, 0.2714, -1.518, -0.043, 3.100000 ]
+        joints: [ *JOINT1_GET_STONE_POSITION, *JOINT2_RECENTLY_POSITION, 0.2714, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION ]
         common:
           <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "move arm up"
       arm:
-        joints: [ 0.458, 0.031, 0.2012, -1.518, -0.043, 3.100000 ]
+        joints: [ *JOINT1_UP_POSITION, *JOINT2_RECENTLY_POSITION, 0.2012, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION ]
         common:
           <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "reversal stone"
       arm:
-        joints: [ 0.452, 0.0316, 0.2012, -1.436, 0.011, 1.0 ]
+        joints: [ *JOINT1_UP_POSITION, *JOINT2_RECENTLY_POSITION, 0.2012, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, 1.0 ]
         common:
           <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "move joint1 and 3"
       arm:
-        joints: [ 0.309, -0.004, -0.25845, -1.487, 1.581, 0.007 ]
+        joints: [ *JOINT1_TWO_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_UP_POSITION ]
         common:
           <<: *QUICKLY
         tolerance:
@@ -807,7 +881,7 @@ steps_list:
         <<: *VELOCITY_Z_IN
     - step: "move joint6"
       arm:
-        joints: [ 0.309, -0.004, -0.25845, -1.487, 1.581, 1.6 ]
+        joints: [ *JOINT1_TWO_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *SLOWLY
         tolerance:
@@ -815,12 +889,9 @@ steps_list:
     - step: "change gripper state"
       gripper:
         <<: *CLOSE_GRIPPER
-    - step: "REVERSAL STOP "
-      reversal:
-        <<: *VELOCITY_STOP
     - step: "arm ready"
       arm:
-        joints: [ 0.436, 0.031, -0.243350, -1.509, -0.008, 3.100000 ]
+        joints: [ *JOINT1_READY_TO_GET_STONE_POSITION, *JOINT2_RECENTLY_POSITION, -0.243350, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION ]
         common:
           <<: *QUICKLY
         tolerance:
@@ -828,30 +899,39 @@ steps_list:
     - step: "change gripper state"
       gripper:
         <<: *OPEN_GRIPPER
+    - step: "REVERSAL STOP "
+      reversal:
+        <<: *VELOCITY_STOP
     - step: "arm get stone"
       arm:
-        joints: [ 0.290, 0.031, -0.243350, -1.509, -0.008, 3.100000 ]
+        joints: [ *JOINT1_GET_STONE_POSITION, *JOINT2_RECENTLY_POSITION, -0.243350, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION ]
         common:
           <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
+    - step: "REVERSAL Z IN "
+      reversal:
+        <<: *VELOCITY_Z_IN
     - step: "arm up stone"
       arm:
-        joints: [ 0.453, 0.031, -0.280050, -1.460, -0.027, 3.100000 ]
+        joints: [ *JOINT1_UP_POSITION, *JOINT2_RECENTLY_POSITION, -0.280050, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_DOWN_POSITION ]
         common:
           <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "reversal stone"
       arm:
-        joints: [ 0.453, 0.031, -0.288, -1.460, -0.027, 1.0 ]
+        joints: [ *JOINT1_UP_POSITION, *JOINT2_RECENTLY_POSITION, -0.288, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, 1.0 ]
         common:
           <<: *QUICKLY
         tolerance:
           <<: *BIGGER_TOLERANCE
+    - step: "REVERSAL stop "
+      reversal:
+        <<: *VELOCITY_STOP
     - step: "move joint1 and 3"
       arm:
-        joints: [ 0.4192, -0.004, -0.25845, -1.487, 1.581, 0.007 ]
+        joints: [ *JOINT1_THREE_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_UP_POSITION ]
         common:
           <<: *QUICKLY
         tolerance:
@@ -861,20 +941,20 @@ steps_list:
         <<: *VELOCITY_Z_IN
     - step: "move joint6"
       arm:
-        joints: [ 0.4192, -0.004, -0.25845, -1.487, 1.581, 1.6 ]
+        joints: [ *JOINT1_THREE_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *SLOWLY
         tolerance:
           <<: *BIGGER_TOLERANCE
-    - step: "REVERSAL STOP "
-      reversal:
-        <<: *VELOCITY_STOP
     - step: "change gripper state"
       gripper:
         <<: *CLOSE_GRIPPER
     - step: "home three stone"
       arm:
         <<: *HOME_THREE_STONE
+    - step: "REVERSAL STOP "
+      reversal:
+        <<: *VELOCITY_STOP
     - step: "change gripper state"
       gripper:
         <<: *OPEN_GRIPPER
@@ -885,187 +965,7 @@ steps_list:
     - step: "change gripper state"
       gripper:
         <<: *OPEN_GRIPPER
-  TEST_FAST:
-    - step: "island gimbal"
-      gimbal:
-        <<: *ISLAND_POS
-    - step: "arm wait"
-      arm:
-        <<: *PICK_WAIT
-    - step: "change gripper state"
-      gripper:
-        <<: *OPEN_GRIPPER
-    - step: "add scenes"
-      scene_name: MID_SMALL_ISLAND
-    - step: "arm ready to get stone"
-      arm:
-        joints: [ 0.4234533056100423, 0.03084413880417841, 0.00879305699769145, -1.5101404974370372, 0.004258877900558122, 3.100000 ]
-        common:
-          <<: *NORMALLY
-        tolerance:
-          <<: *NORMAL_TOLERANCE
-  TEST_FAST0:
-    - step: "arm get stone"
-      arm:
-        joints: [ 0.290, 0.031, 0.009, -1.522, -0.001, 3.100000 ]
-        common:
-          <<: *QUICKLY
-        tolerance:
-          <<: *BIGGER_TOLERANCE
-    - step: "arm up stone"
-      arm:
-        joints: [ 0.435, 0.031, 0.009, -1.4992037839, 0.008332834876478845, 3.100000 ]
-        common:
-          <<: *QUICKLY
-        tolerance:
-          <<: *BIGGER_TOLERANCE
-  TEST_FAST00:
-    - step: "change gripper state"
-      gripper:
-        <<: *OPEN_GRIPPER
-    - step: "arm get stone"
-      arm:
-        joints: [ 0.290, 0.031, 0.009, -1.522, -0.001, 3.100000 ]
-        common:
-          <<: *QUICKLY
-        tolerance:
-          <<: *BIGGER_TOLERANCE
-    - step: "arm up stone"
-      arm:
-        joints: [ 0.435, 0.031, -0.10, -1.4992037839, 0.008332834876478845, 3.100000 ]
-        common:
-          <<: *QUICKLY
-        tolerance:
-          <<: *BIGGER_TOLERANCE
-    - step: "add scenes"
-      scene_name: MID_SMALL_ISLAND
-    - step: "add scenes"
-      scene_name: JOINT_STONE
-    - step: "move joint6"
-      arm:
-        joints: [ 0.135, -0.004, -0.225, -1.487, 1.581, 1.6 ]
-        common:
-          <<: *QUICKLY
-        tolerance:
-          <<: *BIGGER_TOLERANCE
-    - step: "change gripper state"
-      gripper:
-        <<: *CLOSE_GRIPPER
-    - step: "delete_scene"
-    - step: "move joint6"
-      arm:
-        joints: [ 0.12, -0.004, -0.225, -1.487, 1.581, 1.0 ]
-        common:
-          <<: *QUICKLY
-        tolerance:
-          <<: *BIGGER_TOLERANCE
-    - step: "add scenes"
-      scene_name: MID_SMALL_ISLAND
-    - step: "arm ready to get stone"
-      arm:
-        joints: [ 0.43, 0.031, 0.2714, -1.518, -0.043, 3.100000 ]
-        common:
-          <<: *QUICKLY
-        tolerance:
-          <<: *NORMAL_TOLERANCE
-    - step: "change gripper state"
-      gripper:
-        <<: *OPEN_GRIPPER
-    - step: "move arm down to gain stone"
-      arm:
-        joints: [ 0.290, 0.031, 0.2714, -1.518, -0.043, 3.100000 ]
-        common:
-          <<: *QUICKLY
-        tolerance:
-          <<: *BIGGER_TOLERANCE
-    - step: "move arm up"
-      arm:
-        joints: [ 0.458, 0.031, 0.2012, -1.518, -0.043, 3.100000 ]
-        common:
-          <<: *QUICKLY
-        tolerance:
-          <<: *BIGGER_TOLERANCE
-    - step: "move joint6"
-      arm:
-        joints: [ 0.309, -0.004, -0.225, -1.487, 1.581, 1.6 ]
-        common:
-          <<: *QUICKLY
-        tolerance:
-          <<: *BIGGER_TOLERANCE
-    - step: "change gripper state"
-      gripper:
-        <<: *CLOSE_GRIPPER
-    - step: "delete_scene"
-    - step: "arm ready"
-      arm:
-        joints: [ 0.436, 0.031, -0.243350, -1.509, -0.008, 3.100000 ]
-        common:
-          <<: *QUICKLY
-        tolerance:
-          <<: *NORMAL_TOLERANCE
-    - step: "change gripper state"
-      gripper:
-        <<: *OPEN_GRIPPER
-    - step: "arm get stone"
-      arm:
-        joints: [ 0.290, 0.031, -0.243350, -1.509, -0.008, 3.100000 ]
-        common:
-          <<: *QUICKLY
-        tolerance:
-          <<: *BIGGER_TOLERANCE
-    - step: "arm up stone"
-      arm:
-        joints: [ 0.453, 0.031, -0.280050, -1.460, -0.027, 3.100000 ]
-        common:
-          <<: *QUICKLY
-        tolerance:
-          <<: *BIGGER_TOLERANCE
-    - step: "move joint6"
-      arm:
-        joints: [ 0.4192, -0.004, -0.225, -1.487, 1.581, 1.6 ]
-        common:
-          <<: *QUICKLY
-        tolerance:
-          <<: *BIGGER_TOLERANCE
-    - step: "change gripper state"
-      gripper:
-        <<: *CLOSE_GRIPPER
-    - step: "home three stone"
-      arm:
-        <<: *HOME_THREE_STONE
-    - step: "change gripper state"
-      gripper:
-        <<: *OPEN_GRIPPER
-    - step: "delete_scene"
-  TEST_MID:
-    - step: "arm get stone"
-      arm:
-        joints: [ 0.290, 0.031, 0.009, -1.522, -0.001, 3.100000 ]
-        common:
-          <<: *QUICKLY
-        tolerance:
-          <<: *BIGGER_TOLERANCE
-    - step: "arm up stone"
-      arm:
-        joints: [ 0.435, 0.031, 0.009, -1.4992037839, 0.008332834876478845, 3.100000 ]
-        common:
-          <<: *QUICKLY
-        tolerance:
-          <<: *BIGGER_TOLERANCE
-    - step: "arm up stone"
-      arm:
-        joints: [ 0.422802, 0.030656, -0.225, -1.492130, 0.171665, -1. ]
-        common:
-          <<: *QUICKLY
-        tolerance:
-          <<: *NORMAL_TOLERANCE
-    - step: "move joint6"
-      arm:
-        joints: [ 0.309, -0.004, -0.225, -1.487, 1.581, 1.6 ]
-        common:
-          <<: *QUICKLY
-        tolerance:
-          <<: *BIGGER_TOLERANCE
+
 
   ### ljq's part
   AUTO:
@@ -1082,24 +982,15 @@ steps_list:
 
   GENERATE_EXCHANGE:
     - step: "add scenes"
-      scene_name: EXCHANGER
-    - step: "add scenes"
-      scene_name: STONE
-    - step: "move to wait"
-      arm:
-        frame: exchanger
-        position: [ -0.18, 0., -110.12 ]
-        rpy: [ 0., -1.57, 0. ]
-        common:
-          <<: *SLOWLY
+
   AUTO_EXCHANGER:
     - step: "move to wait"
       arm:
         frame: exchanger
-        position: [ 0., 0.2, -0.08 ]
+        position: [ 0., 0.21, -0.12 ]
         rpy: [ 0., 3.14, 1.57 ]
-        tolerance_position: 0.002
-        tolerance_orientation: 0.008
+        tolerance_position: 0.001
+        tolerance_orientation: 0.005
         common:
           <<: *SLOWLY
 
@@ -1116,6 +1007,8 @@ steps_list:
 
   TEST3:
     - step: "add scenes"
+      scene_name: EXCHANGER
+    - step: "add scenes"
       scene_name: STONE
     - step: "move to wait"
       arm:
@@ -1129,7 +1022,7 @@ steps_list:
     - step: "move to wait"
       arm:
         frame: exchanger
-        position: [ 0., 0.2, -0.08 ]
+        position: [ 0., 0.21, -0.12 ]
         rpy: [ 0., 3.14, 1.57 ]
         tolerance_position: 0.002
         tolerance_orientation: 0.008
@@ -1173,7 +1066,7 @@ steps_list:
   HOLD_JOINT6:
     - step: "move joint6 to get stone"
       arm:
-        joints: [ "KEEP", "KEEP", "KEEP", "KEEP", "KEEP", -0.0522 ]
+        joints: [ "KEEP", "KEEP", "KEEP", "KEEP", "KEEP", *JOINT6_UP_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
