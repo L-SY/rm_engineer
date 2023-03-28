@@ -49,6 +49,8 @@ common:
        -0.03
     recently_position: &JOINT2_RECENTLY_POSITION
        0.013
+    reversal_position: &JOINT2_REVERSAL_POSITION
+       0.07
     sky_position: &JOINT2_SKY_POSITION
        0.30500
     furthest_position: &JOINT2_FURTHEST_POSITION
@@ -156,6 +158,17 @@ common:
     position_z_out: &POSITION_Z_OUT
       mode: "POSITION"
       values: [ 0.,0.,10.,0.,0.,0. ]
+    position_pitch_out: &VELOCITY_PITCH_OUT
+      mode: "POSITION"
+      values: [ 0.,0.,10.,0.,-1.,0. ]
+    position_pitch_reversal_pi_2: &POSITION_PITCH_REVERSAL_PI_2
+      mode: "POSITION"
+      values: [ 0.,0.,3.,0.,18.,0. ]
+      delay: 0.5
+    position_pitch_reversal_pi: &POSITION_PITCH_REVERSAL_PI
+      mode: "POSITION"
+      values: [ 0.,0.,5.,0.,40.,0. ]
+      delay: 0.8
 steps_list:
   ################### COMMON STEP####################
   DELETE_SCENE:
@@ -644,7 +657,7 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "move joint1 and 3 and 6"
       arm:
-        joints: [ *JOINT1_ZERO_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
+        joints: [ *JOINT1_ZERO_STONE_POSITION, *JOINT2_REVERSAL_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -654,26 +667,25 @@ steps_list:
         <<: *POSITION_Z_OUT
     - step: "move joint1 and 3 and 6"
       arm:
-        joints: [ *JOINT1_THREE_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
+        joints: [ *JOINT1_THREE_STONE_POSITION, *JOINT2_REVERSAL_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
-    - step: "TEST"
+    - step: "pitch reversal pi"
       reversal:
-        mode: "POSITION"
-        values: [ 0.,0.,0.,0.,22,0. ]
-        delay: 1
+       <<: *POSITION_PITCH_REVERSAL_PI
+  TAKE_WHEN_ONE_STONE00:
     - step: "move joint2 to get stone"
       arm:
         joints: [ *JOINT1_THREE_STONE_POSITION, *JOINT2_BACK_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_MORE_POSITION, *JOINT6_BACK_POSITION ]
         common:
-          <<: *NORMALLY
+          <<: *SLOWLY
         tolerance:
           <<: *NORMAL_TOLERANCE
     - step: "REVERSAL Z OUT"
       reversal:
-        <<: *VELOCITY_Z_OUT
+        <<: *VELOCITY_PITCH_OUT
     - step: "move joint6"
       arm:
         joints: [ 0.327400, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_HOLD_STONE_POSITION ]
@@ -694,18 +706,22 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "move joint1 and 3 and 6"
       arm:
-        joints: [ 0.133600, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION  ]
+        joints: [ 0.133600, *JOINT2_REVERSAL_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION  ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
     - step: "move joint1 and 3 and 6"
       arm:
-        joints: [ 0.327400, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
+        joints: [ 0.327400, *JOINT2_REVERSAL_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
+    - step: "pitch reversal pi"
+      reversal:
+        <<: *POSITION_PITCH_REVERSAL_PI
+  TAKE_WHEN_TWO_STONE00:
     - step: "move joint2 to get stone"
       arm:
         joints: [ 0.327400, *JOINT2_BACK_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_MORE_POSITION, *JOINT6_BACK_POSITION ]
@@ -737,14 +753,18 @@ steps_list:
         <<: *OPEN_GRIPPER
     - step: "move joint1 and 3 and 6"
       arm:
-        joints: [ 0.327400, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
+        joints: [ 0.327400, *JOINT2_REVERSAL_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
+    - step: "pitch reversal pi"
+      reversal:
+        <<: *POSITION_PITCH_REVERSAL_PI
+  TAKE_WHEN_THREE_STONE00:
     - step: "move joint2 to get stone"
       arm:
-        joints: [ 0.327400, *JOINT2_BACK_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_MORE_POSITION, *JOINT6_BACK_POSITION ]
+        joints: [ 0.327400, *JOINT2_REVERSAL_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_MORE_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -762,9 +782,6 @@ steps_list:
     - step: "REVERSAL STOP"
       reversal:
         <<: *VELOCITY_STOP
-    - step: "home with no stone"
-      arm:
-        <<: *HOME_TWO_STONE
     - step: "home with no stone"
       arm:
         <<: *HOME_TWO_STONE
@@ -1130,11 +1147,14 @@ steps_list:
         mode: "POSITION"
         values: [ 0.,0.,10.,0.,0.,0. ]
 
-  PITCH:
+  PITCH_PI:
     - step: "TEST"
       reversal:
-        mode: "POSITION"
-        values: [ 0.,0.,0.,0.,22,0. ]
+        <<: *POSITION_PITCH_REVERSAL_PI
+  PITCH_PI_2:
+    - step: "TEST"
+      reversal:
+        <<: *POSITION_PITCH_REVERSAL_PI_2
 
   ROLL:
     - step: "TEST"
