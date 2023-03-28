@@ -654,14 +654,19 @@ steps_list:
         <<: *POSITION_Z_OUT
     - step: "move joint1 and 3 and 6"
       arm:
-        joints: [ *JOINT1_TWO_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
+        joints: [ *JOINT1_THREE_STONE_POSITION, *JOINT2_RECENTLY_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
           <<: *BIGGER_TOLERANCE
+    - step: "TEST"
+      reversal:
+        mode: "POSITION"
+        values: [ 0.,0.,0.,0.,22,0. ]
+        delay: 1
     - step: "move joint2 to get stone"
       arm:
-        joints: [ 0.327400, *JOINT2_BACK_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_MORE_POSITION, *JOINT6_BACK_POSITION ]
+        joints: [ *JOINT1_THREE_STONE_POSITION, *JOINT2_BACK_POSITION, *JOINT3_TAKE_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_LEFT_MORE_POSITION, *JOINT6_BACK_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
@@ -1129,7 +1134,7 @@ steps_list:
     - step: "TEST"
       reversal:
         mode: "POSITION"
-        values: [ 0.,0.,0.,0.,16,0. ]
+        values: [ 0.,0.,0.,0.,22,0. ]
 
   ROLL:
     - step: "TEST"
