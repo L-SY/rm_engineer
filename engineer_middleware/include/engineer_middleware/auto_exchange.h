@@ -176,7 +176,7 @@ class AutoServoMove : public ProgressBase
 {
 public:
   AutoServoMove(XmlRpc::XmlRpcValue& servo_move, ros::NodeHandle& nh, tf2_ros::Buffer& tf_buffer)
-    : ProgressBase(servo_move, tf_buffer)
+    : ProgressBase(servo_move, tf_buffer), joint7_msg_(0.)
   {
     //      servo_move:
     //        xyz_offset: [ 0.08, 0., -0.04]
