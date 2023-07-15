@@ -49,36 +49,36 @@ enum ExchangeProcess
   FINISH
 };
 
-// class JointInfo
-//{
-// public:
-//  JointInfo(XmlRpc::XmlRpcValue& joint)
-//  {
-//    //      joint1:
-//    //        offset: 0.01
-//    //        range: [0.,1.]
-//    //        max_vel: 0.03
-//    //        near_tolerance: 0.03
-//    offset_ = xmlRpcGetDouble(joint, "offset", 0.);
-//    max_vel_ = xmlRpcGetDouble(joint, "max_vel", 1.0);
-//    near_tolerance_ = xmlRpcGetDouble(joint, "near_tolerance", 0.05);
-//    ROS_ASSERT(joint["range"].getType() == XmlRpc::XmlRpcValue::TypeArray);
-//    min_position_ = xmlRpcGetDouble(joint["range"], 0);
-//    max_position_ = xmlRpcGetDouble(joint["range"], 1);
-//  }
-//  bool judgeJointPosition()
-//  {
-//    return abs(current_position_ - offset_ - min_position_) <= near_tolerance_ ||
-//           abs(max_position_ + offset_ - current_position_) <= near_tolerance_;
-//  }
-//  int judgeMoveDirect()
-//  {
-//    return ((current_position_ - offset_) >= ((max_position_ - min_position_) / 2)) ? 1 : -1;
-//  }
-//
-// private:
-//  double offset_, max_position_, min_position_, current_position_, max_vel_, near_tolerance_;
-//};
+class JointInfo
+{
+public:
+  JointInfo(XmlRpc::XmlRpcValue& joint)
+  {
+    //      joint1:
+    //        offset: 0.01
+    //        range: [0.,1.]
+    //        max_vel: 0.03
+    //        near_tolerance: 0.03
+    offset_ = xmlRpcGetDouble(joint, "offset", 0.);
+    max_scale_ = xmlRpcGetDouble(joint, "max_scale", 1.0);
+    near_tolerance_ = xmlRpcGetDouble(joint, "near_tolerance", 0.05);
+    ROS_ASSERT(joint["range"].getType() == XmlRpc::XmlRpcValue::TypeArray);
+    min_position_ = xmlRpcGetDouble(joint["range"], 0);
+    max_position_ = xmlRpcGetDouble(joint["range"], 1);
+  }
+  bool judgeJointPosition()
+  {
+    return abs(current_position_ - offset_ - min_position_) <= near_tolerance_ ||
+           abs(max_position_ + offset_ - current_position_) <= near_tolerance_;
+  }
+  int judgeMoveDirect()
+  {
+    return ((current_position_ - offset_) >= ((max_position_ - min_position_) / 2)) ? 1 : -1;
+  }
+
+public:
+  double offset_, max_position_, min_position_, current_position_, max_scale_, near_tolerance_;
+};
 
 class ProgressBase
 {
@@ -88,7 +88,6 @@ public:
     // progress:
     //        timeout: 3.
     time_out_ = xmlRpcGetDouble(progress, "timeout", 1e10);
-    start_time_ = ros::Time::now();
   }
   virtual void init() = 0;
   virtual void nextProcess() = 0;
@@ -100,9 +99,9 @@ public:
     if (period.toSec() > time_out_)
     {
       ROS_ERROR("Step timeout,it should be finish in %f seconds", time_out_);
-      return false;
+      return true;
     }
-    return true;
+    return false;
   }
 
 protected:
@@ -113,60 +112,86 @@ protected:
   ros::Time start_time_{};
 };
 
-// class Find : public ProgressBase
-//{
-// public:
-//  Find(XmlRpc::XmlRpcValue& find, tf2_ros::Buffer& tf_buffer) : ProgressBase(find, tf_buffer)
-//  {
-//    //        find:
-//    //          pitch:
-//    //        offset: 0.01
-//    //        range: [0.,1.]
-//    //        max_vel: 0.03
-//    //        near_tolerance: 0.03
-//    //          confirm_lock_time
-//    process_ = SWING;
-//    ROS_ASSERT(find["yaw"].getType() == XmlRpc::XmlRpcValue::TypeStruct);
-//    ROS_ASSERT(find["pitch"].getType() == XmlRpc::XmlRpcValue::TypeStruct);
-//    yaw_ = new JointInfo(find["yaw"]);
-//    pitch_ = new JointInfo(find["pitch_"]);
-//    confirm_lock_time_ = xmlRpcGetDouble(find, "confirm_lock_time", 10);
-//    ROS_INFO_STREAM("~~~~~~~~~~~~~FIND~~~~~~~~~~~~~~~~");
-//  }
-//  void init() override
-//  {
-//    is_finish_ = false;
-//    process_ = { SWING };
-//  }
-//  void nextProcess() override
-//  {
-//    process_++;
-//    printProcess();
-//  }
-//  void manageProcess() override
-//  {
-//    if (process_ != LOCKED)
-//      nextProcess();
-//    else
-//      is_finish_ = true;
-//  }
-//  void printProcess() override
-//  {
-//    if (process_ == SWING)
-//      ROS_INFO_STREAM("SWING");
-//    else if (process_ == FOUND)
-//      ROS_INFO_STREAM("FOUND");
-//    else if (process_ == LOCKED)
-//      ROS_INFO_STREAM("LOCKED");
-//  }
-//  void run() override
-//  {
-//  }
-//
-// private:
-//  JointInfo *yaw_{}, *pitch_{};
-//  double search_angle_{}, confirm_lock_time_{};
-//};
+class Find : public ProgressBase
+{
+public:
+  Find(XmlRpc::XmlRpcValue& find, tf2_ros::Buffer& tf_buffer) : ProgressBase(find, tf_buffer)
+  {
+    //        find:
+    //          pitch:
+    //        offset: 0.01
+    //        range: [0.,1.]
+    //        max_scale: 0.03
+    //        near_tolerance: 0.03
+    //          confirm_lock_time
+    process_ = SWING;
+    gimbal_scale_.resize(2, 0);
+    chassis_scale_.resize(2, 0);
+    search_range_ = xmlRpcGetDouble(find, "search_range", 0.3);
+    ROS_ASSERT(find["yaw"].getType() == XmlRpc::XmlRpcValue::TypeStruct);
+    ROS_ASSERT(find["pitch"].getType() == XmlRpc::XmlRpcValue::TypeStruct);
+    yaw_ = new JointInfo(find["yaw"]);
+    pitch_ = new JointInfo(find["pitch_"]);
+    confirm_lock_time_ = xmlRpcGetDouble(find, "confirm_lock_time", 10);
+    ROS_INFO_STREAM("~~~~~~~~~~~~~FIND~~~~~~~~~~~~~~~~");
+  }
+  void init() override
+  {
+    is_finish_ = false;
+    process_ = { SWING };
+  }
+  void nextProcess() override
+  {
+    process_++;
+    printProcess();
+  }
+  void autoSearch(bool enable_chassis, bool enable_gimbal)
+  {
+    if (enable_gimbal)
+    {
+      geometry_msgs::TransformStamped base2yaw, yaw2pitch;
+      base2yaw = tf_buffer_.lookupTransform("gimbal_base", "yaw", ros::Time(0));
+      yaw2pitch = tf_buffer_.lookupTransform("yaw", "pitch", ros::Time(0));
+
+      double yaw = yawFromQuat(base2yaw.transform.rotation);
+      double roll_temp, pitch, yaw_temp;
+      quatToRPY(yaw2pitch.transform.rotation, roll_temp, pitch, yaw_temp);
+      yaw_->current_position_ = yaw / search_range_;
+      pitch_->current_position_ = pitch / search_range_;
+      gimbal_scale_[0] = yaw_->judgeMoveDirect() * yaw_->max_scale_;
+      gimbal_scale_[1] = pitch_->judgeMoveDirect() * pitch_->max_scale_;
+    }
+    if (enable_gimbal)
+      chassis_scale_[0] = gimbal_scale_[0];
+  }
+  void manageProcess() override
+  {
+    if (process_ != LOCKED)
+      nextProcess();
+    else
+      is_finish_ = true;
+  }
+  void printProcess() override
+  {
+    if (process_ == SWING)
+      ROS_INFO_STREAM("SWING");
+    else if (process_ == FOUND)
+      ROS_INFO_STREAM("FOUND");
+    else if (process_ == LOCKED)
+      ROS_INFO_STREAM("LOCKED");
+  }
+  void run() override
+  {
+    if (!is_finish_)
+      manageProcess();
+  }
+
+private:
+  JointInfo *yaw_{}, *pitch_{};
+  std::vector<double> gimbal_scale_{}, chassis_scale_{};
+  ros::Subscriber exchanger_tf_sub_{};
+  double search_range_{}, confirm_lock_time_{};
+};
 
 // class ProAdjust
 //{
@@ -175,18 +200,18 @@ protected:
 class AutoServoMove : public ProgressBase
 {
 public:
-  AutoServoMove(XmlRpc::XmlRpcValue& servo_move, ros::NodeHandle& nh, tf2_ros::Buffer& tf_buffer)
-    : ProgressBase(servo_move, tf_buffer), joint7_msg_(0.)
+  AutoServoMove(XmlRpc::XmlRpcValue& auto_servo_move, ros::NodeHandle& nh, tf2_ros::Buffer& tf_buffer)
+    : ProgressBase(auto_servo_move, tf_buffer), joint7_msg_(0.)
   {
     //      servo_move:
     //        xyz_offset: [ 0.08, 0., -0.04]
     //        link7_length: 0.1
     //        servo_p: [ 6., 6., 7., 3., 2., 1. ]
     //        servo_error_tolerance: [ 0.01, 0.01, 0.01, 0.01, 0.01, 0.01 ]
-    ROS_ASSERT(servo_move["xyz_offset"].getType() == XmlRpc::XmlRpcValue::TypeArray);
-    ROS_ASSERT(servo_move["servo_p"].getType() == XmlRpc::XmlRpcValue::TypeArray);
-    ROS_ASSERT(servo_move["servo_error_tolerance"].getType() == XmlRpc::XmlRpcValue::TypeArray);
-    ROS_ASSERT(servo_move["link7_length"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
+    ROS_ASSERT(auto_servo_move["xyz_offset"].getType() == XmlRpc::XmlRpcValue::TypeArray);
+    ROS_ASSERT(auto_servo_move["servo_p"].getType() == XmlRpc::XmlRpcValue::TypeArray);
+    ROS_ASSERT(auto_servo_move["servo_error_tolerance"].getType() == XmlRpc::XmlRpcValue::TypeArray);
+    ROS_ASSERT(auto_servo_move["link7_length"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
     process_ = { YZ };
     enter_auto_servo_move_.data = false;
     xyz_offset_.resize(3, 0.);
@@ -195,11 +220,11 @@ public:
     servo_scales_.resize(6, 0.);
     servo_error_tolerance_.resize(6, 0.01);
     for (int i = 0; i < (int)xyz_offset_.size(); ++i)
-      xyz_offset_[i] = servo_move["xyz_offset"][i];
+      xyz_offset_[i] = auto_servo_move["xyz_offset"][i];
     for (int i = 0; i < (int)servo_p_.size(); ++i)
     {
-      servo_p_[i] = servo_move["servo_p"][i];
-      servo_error_tolerance_[i] = servo_move["servo_error_tolerance"][i];
+      servo_p_[i] = auto_servo_move["servo_p"][i];
+      servo_error_tolerance_[i] = auto_servo_move["servo_error_tolerance"][i];
     }
     exchanger_tf_update_pub_ = nh.advertise<std_msgs::Bool>("/is_update_exchanger", 1);
     ROS_INFO_STREAM("~~~~~~~~~~~~~SERVO_MOVE~~~~~~~~~~~~~~~~");
@@ -212,6 +237,7 @@ public:
     process_ = { YZ };
     enter_auto_servo_move_.data = false;
     initComputerValue();
+    joint7_msg_ = 0.;
   }
   void printProcess() override
   {
@@ -294,9 +320,10 @@ private:
       ROS_WARN("%s", ex.what());
     }
     initComputerValue();
-    servo_errors_[0] = (process_ == PUSH ? (tools2exchanger.transform.translation.x) :
+    servo_errors_[0] = (process_ == PUSH ? (tools2exchanger.transform.translation.x + xyz_offset_[0]) :
                                            (tools2exchanger.transform.translation.x - xyz_offset_[0]));
-    servo_errors_[1] = tools2exchanger.transform.translation.y - xyz_offset_[1] + 0.06 * sin(roll + M_PI_2);
+    //    servo_errors_[1] = tools2exchanger.transform.translation.y - xyz_offset_[1] + 0.03 * sin(roll + M_PI_2);
+    servo_errors_[1] = tools2exchanger.transform.translation.y - xyz_offset_[1];
     servo_errors_[2] = tools2exchanger.transform.translation.z - xyz_offset_[2];
     servo_errors_[3] = roll;
     servo_errors_[4] = pitch;
@@ -351,7 +378,7 @@ private:
           arrived_joint_num++;
       }
     }
-    if (checkTimeout(ros::Time::now() - inside_process_start_time_))
+    if (checkTimeout(ros::Time::now() - start_time_))
     {
       if (process_ != DONE)
         nextProcess();
