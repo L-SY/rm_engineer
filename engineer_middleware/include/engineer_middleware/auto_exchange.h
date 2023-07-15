@@ -95,7 +95,6 @@ public:
   virtual void manageProcess() = 0;
   virtual void run() = 0;
   virtual void printProcess() = 0;
-  virtual bool isInsideFinish() = 0;
   bool checkTimeout(ros::Duration period)
   {
     if (period.toSec() > time_out_)
@@ -173,10 +172,10 @@ protected:
 //{
 //};
 
-class ServoMove : public ProgressBase
+class AutoServoMove : public ProgressBase
 {
 public:
-  ServoMove(XmlRpc::XmlRpcValue& servo_move, ros::NodeHandle& nh, tf2_ros::Buffer& tf_buffer)
+  AutoServoMove(XmlRpc::XmlRpcValue& servo_move, ros::NodeHandle& nh, tf2_ros::Buffer& tf_buffer)
     : ProgressBase(servo_move, tf_buffer)
   {
     //      servo_move:
@@ -189,7 +188,7 @@ public:
     ROS_ASSERT(servo_move["servo_error_tolerance"].getType() == XmlRpc::XmlRpcValue::TypeArray);
     ROS_ASSERT(servo_move["link7_length"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
     process_ = { YZ };
-    enter_servo_move_.data = false;
+    enter_auto_servo_move_.data = false;
     xyz_offset_.resize(3, 0.);
     servo_p_.resize(6, 0.);
     servo_errors_.resize(6, 0.);
@@ -205,13 +204,13 @@ public:
     exchanger_tf_update_pub_ = nh.advertise<std_msgs::Bool>("/is_update_exchanger", 1);
     ROS_INFO_STREAM("~~~~~~~~~~~~~SERVO_MOVE~~~~~~~~~~~~~~~~");
   }
-  ~ServoMove() = default;
+  ~AutoServoMove() = default;
   void init() override
   {
     is_finish_ = false;
     is_recorded_time_ = false;
     process_ = { YZ };
-    enter_servo_move_.data = false;
+    enter_auto_servo_move_.data = false;
     initComputerValue();
   }
   void printProcess() override
@@ -229,10 +228,11 @@ public:
   }
   void run() override
   {
-    enter_servo_move_.data = true;
-    exchanger_tf_update_pub_.publish(enter_servo_move_);
+    enter_auto_servo_move_.data = true;
+    exchanger_tf_update_pub_.publish(enter_auto_servo_move_);
     if (!is_finish_)
     {
+      is_enter_auto_ = true;
       if (!is_recorded_time_)
       {
         start_time_ = ros::Time::now();
@@ -245,6 +245,18 @@ public:
   double getJoint7Msg()
   {
     return joint7_msg_;
+  }
+  bool getEnterAutoServoFlag()
+  {
+    return enter_auto_servo_move_.data;
+  }
+  bool getFinishFlag()
+  {
+    return is_finish_;
+  }
+  std::vector<double> getServoScale()
+  {
+    return servo_scales_;
   }
 
 private:
@@ -357,8 +369,8 @@ private:
   }
 
   ros::Time inside_process_start_time_{};
-  std_msgs::Bool enter_servo_move_{};
-  bool is_recorded_time_{};
+  std_msgs::Bool enter_auto_servo_move_{};
+  bool is_recorded_time_{}, is_enter_auto_{};
   double link7_length_{}, joint7_msg_{};
   ros::Publisher exchanger_tf_update_pub_;
   std::vector<double> xyz_offset_{}, servo_p_{}, servo_errors_{}, servo_scales_{}, servo_error_tolerance_{};
