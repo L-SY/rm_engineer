@@ -6,6 +6,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/buffer.h>
 #include <rm_common/ori_tool.h>
+#include <rm_msgs/ExchangerMsg.h>
 
 namespace auto_exchange
 {
@@ -25,9 +26,12 @@ enum AdjustProcess
 enum ServoMoveProcess
 {
   YZ,
-  ROLL_YAW,
-  XYZ,
+  YAW,
+  ROLL,
+  Y,
   PITCH,
+  REY,
+  Z,
   PUSH,
   DONE
 };
@@ -54,39 +58,38 @@ class JointInfo
 public:
   JointInfo(XmlRpc::XmlRpcValue& joint)
   {
-    //      joint1:
-    //        offset: 0.01
-    //        range: [0.,1.]
-    //        max_vel: 0.03
-    //        near_tolerance: 0.03
     offset_ = xmlRpcGetDouble(joint, "offset", 0.);
     max_scale_ = xmlRpcGetDouble(joint, "max_scale", 1.0);
     near_tolerance_ = xmlRpcGetDouble(joint, "near_tolerance", 0.05);
     ROS_ASSERT(joint["range"].getType() == XmlRpc::XmlRpcValue::TypeArray);
     min_position_ = xmlRpcGetDouble(joint["range"], 0);
     max_position_ = xmlRpcGetDouble(joint["range"], 1);
+    move_direct_ = -1;
   }
-  bool judgeJointPosition()
+  bool judgeJointLimit()
   {
     return abs(current_position_ - offset_ - min_position_) <= near_tolerance_ ||
            abs(max_position_ + offset_ - current_position_) <= near_tolerance_;
   }
-  int judgeMoveDirect()
+  void judgeMoveDirect()
   {
-    return ((current_position_ - offset_) >= ((max_position_ - min_position_) / 2)) ? 1 : -1;
+    if (current_position_ - offset_ <= min_position_)
+      move_direct_ = 1;
+    else if (current_position_ - offset_ >= max_position_)
+      move_direct_ = -1;
   }
 
 public:
+  int move_direct_;
   double offset_, max_position_, min_position_, current_position_, max_scale_, near_tolerance_;
 };
 
 class ProgressBase
 {
 public:
-  ProgressBase(XmlRpc::XmlRpcValue& progress, tf2_ros::Buffer& tf_buffer) : tf_buffer_(tf_buffer)
+  ProgressBase(XmlRpc::XmlRpcValue& progress, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh)
+    : tf_buffer_(tf_buffer), nh_(nh)
   {
-    // progress:
-    //        timeout: 3.
     time_out_ = xmlRpcGetDouble(progress, "timeout", 1e10);
   }
   virtual void init() = 0;
@@ -107,39 +110,90 @@ public:
 protected:
   tf2_ros::Buffer& tf_buffer_;
   int process_{};
-  bool is_finish_{ false }, is_inside_finish_{ false };
+  bool is_finish_{ false };
   double time_out_{};
   ros::Time start_time_{};
+  ros::NodeHandle nh_{};
 };
 
 class Find : public ProgressBase
 {
 public:
-  Find(XmlRpc::XmlRpcValue& find, tf2_ros::Buffer& tf_buffer) : ProgressBase(find, tf_buffer)
+  Find(XmlRpc::XmlRpcValue& find, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh) : ProgressBase(find, tf_buffer, nh)
   {
-    //        find:
-    //          pitch:
-    //        offset: 0.01
-    //        range: [0.,1.]
-    //        max_scale: 0.03
-    //        near_tolerance: 0.03
-    //          confirm_lock_time
     process_ = SWING;
     gimbal_scale_.resize(2, 0);
     chassis_scale_.resize(2, 0);
     search_range_ = xmlRpcGetDouble(find, "search_range", 0.3);
     ROS_ASSERT(find["yaw"].getType() == XmlRpc::XmlRpcValue::TypeStruct);
     ROS_ASSERT(find["pitch"].getType() == XmlRpc::XmlRpcValue::TypeStruct);
+    ROS_INFO_STREAM(time_out_);
     yaw_ = new JointInfo(find["yaw"]);
-    pitch_ = new JointInfo(find["pitch_"]);
+    pitch_ = new JointInfo(find["pitch"]);
     confirm_lock_time_ = xmlRpcGetDouble(find, "confirm_lock_time", 10);
-    ROS_INFO_STREAM("~~~~~~~~~~~~~FIND~~~~~~~~~~~~~~~~");
+    visual_recognition_sub_ =
+        nh_.subscribe<rm_msgs::ExchangerMsg>("/pnp_publisher", 10, &Find::visualRecognitionCallback, this);
   }
   void init() override
   {
     is_finish_ = false;
+    is_recorded_time_ = false;
     process_ = { SWING };
+    initScales();
   }
+  void run() override
+  {
+    if (!is_finish_)
+    {
+      if (!is_recorded_time_)
+      {
+        is_recorded_time_ = true;
+        start_time_ = ros::Time::now();
+      }
+      manageProcess();
+      switch (process_)
+      {
+        case SWING:
+        {
+          autoSearch(false, true);
+          if (checkTimeout(ros::Time::now() - start_time_))
+          {
+            is_finish_ = true;
+            ROS_INFO_STREAM("TIME OUT");
+          }
+        }
+        break;
+        case FOUND:
+        {
+          for (int i = 0; i < (int)gimbal_scale_.size(); ++i)
+          {
+            gimbal_scale_[i] /= confirm_lock_time_;
+          }
+        }
+        break;
+        case LOCKED:
+        {
+          is_finish_ = true;
+          ROS_INFO_STREAM("LOCKED");
+        }
+        break;
+      }
+    }
+    else
+    {
+      initScales();
+    }
+  }
+  std::vector<double> getGimbalScale()
+  {
+    return gimbal_scale_;
+  }
+  std::vector<double> getChassisScale()
+  {
+    return chassis_scale_;
+  }
+
+private:
   void nextProcess() override
   {
     process_++;
@@ -158,18 +212,38 @@ public:
       quatToRPY(yaw2pitch.transform.rotation, roll_temp, pitch, yaw_temp);
       yaw_->current_position_ = yaw / search_range_;
       pitch_->current_position_ = pitch / search_range_;
-      gimbal_scale_[0] = yaw_->judgeMoveDirect() * yaw_->max_scale_;
-      gimbal_scale_[1] = pitch_->judgeMoveDirect() * pitch_->max_scale_;
+      yaw_->judgeMoveDirect();
+      pitch_->judgeMoveDirect();
+      gimbal_scale_[0] = yaw_->move_direct_ * yaw_->max_scale_;
+      gimbal_scale_[1] = pitch_->move_direct_ * pitch_->max_scale_;
     }
-    if (enable_gimbal)
+    if (enable_chassis)
+    {
       chassis_scale_[0] = gimbal_scale_[0];
+      chassis_scale_[1] = gimbal_scale_[1];
+    }
   }
   void manageProcess() override
   {
-    if (process_ != LOCKED)
-      nextProcess();
+    if (!is_found_)
+    {
+      process_ = SWING;
+    }
     else
-      is_finish_ = true;
+    {
+      static int lock_time = 0;
+      if (lock_time <= confirm_lock_time_)
+      {
+        process_ = FOUND;
+        lock_time++;
+      }
+      else
+      {
+        lock_time = 0;
+        process_ = LOCKED;
+        is_finish_ = true;
+      }
+    }
   }
   void printProcess() override
   {
@@ -180,16 +254,22 @@ public:
     else if (process_ == LOCKED)
       ROS_INFO_STREAM("LOCKED");
   }
-  void run() override
+  void initScales()
   {
-    if (!is_finish_)
-      manageProcess();
+    for (int i = 0; i < (int)gimbal_scale_.size(); ++i)
+    {
+      gimbal_scale_[i] = 0;
+      chassis_scale_[i] = 0;
+    }
   }
-
-private:
+  void visualRecognitionCallback(const rm_msgs::ExchangerMsg ::ConstPtr& msg)
+  {
+    is_found_ = msg->flag;
+  }
   JointInfo *yaw_{}, *pitch_{};
+  bool is_found_{ false }, is_recorded_time_{ false };
   std::vector<double> gimbal_scale_{}, chassis_scale_{};
-  ros::Subscriber exchanger_tf_sub_{};
+  ros::Subscriber visual_recognition_sub_{};
   double search_range_{}, confirm_lock_time_{};
 };
 
@@ -200,14 +280,9 @@ private:
 class AutoServoMove : public ProgressBase
 {
 public:
-  AutoServoMove(XmlRpc::XmlRpcValue& auto_servo_move, ros::NodeHandle& nh, tf2_ros::Buffer& tf_buffer)
-    : ProgressBase(auto_servo_move, tf_buffer), joint7_msg_(0.)
+  AutoServoMove(XmlRpc::XmlRpcValue& auto_servo_move, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh)
+    : ProgressBase(auto_servo_move, tf_buffer, nh), joint7_msg_(0.)
   {
-    //      servo_move:
-    //        xyz_offset: [ 0.08, 0., -0.04]
-    //        link7_length: 0.1
-    //        servo_p: [ 6., 6., 7., 3., 2., 1. ]
-    //        servo_error_tolerance: [ 0.01, 0.01, 0.01, 0.01, 0.01, 0.01 ]
     ROS_ASSERT(auto_servo_move["xyz_offset"].getType() == XmlRpc::XmlRpcValue::TypeArray);
     ROS_ASSERT(auto_servo_move["servo_p"].getType() == XmlRpc::XmlRpcValue::TypeArray);
     ROS_ASSERT(auto_servo_move["servo_error_tolerance"].getType() == XmlRpc::XmlRpcValue::TypeArray);
@@ -226,7 +301,7 @@ public:
       servo_p_[i] = auto_servo_move["servo_p"][i];
       servo_error_tolerance_[i] = auto_servo_move["servo_error_tolerance"][i];
     }
-    exchanger_tf_update_pub_ = nh.advertise<std_msgs::Bool>("/is_update_exchanger", 1);
+    exchanger_tf_update_pub_ = nh_.advertise<std_msgs::Bool>("/is_update_exchanger", 1);
     ROS_INFO_STREAM("~~~~~~~~~~~~~SERVO_MOVE~~~~~~~~~~~~~~~~");
   }
   ~AutoServoMove() = default;
@@ -236,26 +311,37 @@ public:
     is_recorded_time_ = false;
     process_ = { YZ };
     enter_auto_servo_move_.data = false;
+    is_exchanger_tf_update_.data = true;
     initComputerValue();
     joint7_msg_ = 0.;
+    exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
   }
   void printProcess() override
   {
     if (process_ == YZ)
       ROS_INFO_STREAM("YZ");
-    else if (process_ == ROLL_YAW)
-      ROS_INFO_STREAM("ROLL_YAW");
-    else if (process_ == XYZ)
-      ROS_INFO_STREAM("XYZ");
+    else if (process_ == YAW)
+      ROS_INFO_STREAM("YAW");
+    else if (process_ == ROLL)
+      ROS_INFO_STREAM("ROLL");
+    else if (process_ == Y)
+      ROS_INFO_STREAM("Y");
+    else if (process_ == REY)
+      ROS_INFO_STREAM("REY");
     else if (process_ == PITCH)
       ROS_INFO_STREAM("PITCH");
+    else if (process_ == Z)
+      ROS_INFO_STREAM("Z");
     else if (process_ == PUSH)
       ROS_INFO_STREAM("PUSH");
+    else if (process_ == DONE)
+      ROS_INFO_STREAM("DOWN");
   }
   void run() override
   {
     enter_auto_servo_move_.data = true;
-    exchanger_tf_update_pub_.publish(enter_auto_servo_move_);
+    is_exchanger_tf_update_.data = false;
+    exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
     if (!is_finish_)
     {
       is_enter_auto_ = true;
@@ -322,8 +408,8 @@ private:
     initComputerValue();
     servo_errors_[0] = (process_ == PUSH ? (tools2exchanger.transform.translation.x + xyz_offset_[0]) :
                                            (tools2exchanger.transform.translation.x - xyz_offset_[0]));
-    //    servo_errors_[1] = tools2exchanger.transform.translation.y - xyz_offset_[1] + 0.03 * sin(roll + M_PI_2);
-    servo_errors_[1] = tools2exchanger.transform.translation.y - xyz_offset_[1];
+    servo_errors_[1] = tools2exchanger.transform.translation.y - xyz_offset_[1] + 0.03 * sin(roll + M_PI_2);
+    //    servo_errors_[1] = tools2exchanger.transform.translation.y - xyz_offset_[1];
     servo_errors_[2] = tools2exchanger.transform.translation.z - xyz_offset_[2];
     servo_errors_[3] = roll;
     servo_errors_[4] = pitch;
@@ -342,21 +428,34 @@ private:
         }
       }
       break;
-      case ROLL_YAW:
+      case YAW:
       {
-        servo_scales_[3] = servo_errors_[3] * servo_p_[3];
         servo_scales_[5] = servo_errors_[5] * servo_p_[5];
       }
       break;
-      case XYZ:
+      case ROLL:
       {
-        for (int i = 0; i < 3; ++i)
-          servo_scales_[i] = servo_errors_[i] * servo_p_[i];
+        servo_scales_[3] = servo_errors_[3] * servo_p_[3];
+      }
+      break;
+      case Y:
+      {
+        servo_scales_[1] = servo_errors_[1] * servo_p_[1];
       }
       break;
       case PITCH:
       {
         joint7_msg_ = servo_errors_[4];
+      }
+      break;
+      case REY:
+      {
+        servo_scales_[1] = servo_errors_[1] * servo_p_[1];
+      }
+      break;
+      case Z:
+      {
+        servo_scales_[2] = servo_errors_[2] * servo_p_[2];
       }
       break;
       case PUSH:
@@ -396,7 +495,7 @@ private:
   }
 
   ros::Time inside_process_start_time_{};
-  std_msgs::Bool enter_auto_servo_move_{};
+  std_msgs::Bool enter_auto_servo_move_{}, is_exchanger_tf_update_{};
   bool is_recorded_time_{}, is_enter_auto_{};
   double link7_length_{}, joint7_msg_{};
   ros::Publisher exchanger_tf_update_pub_;
