@@ -406,10 +406,9 @@ private:
       ROS_WARN("%s", ex.what());
     }
     initComputerValue();
-    servo_errors_[0] = (process_ == PUSH ? (tools2exchanger.transform.translation.x + xyz_offset_[0]) :
+    servo_errors_[0] = (process_ == PUSH ? (tools2exchanger.transform.translation.x) :
                                            (tools2exchanger.transform.translation.x - xyz_offset_[0]));
-    servo_errors_[1] = tools2exchanger.transform.translation.y - xyz_offset_[1] + 0.03 * sin(roll + M_PI_2);
-    //    servo_errors_[1] = tools2exchanger.transform.translation.y - xyz_offset_[1];
+    servo_errors_[1] = tools2exchanger.transform.translation.y - xyz_offset_[1];
     servo_errors_[2] = tools2exchanger.transform.translation.z - xyz_offset_[2];
     servo_errors_[3] = roll;
     servo_errors_[4] = pitch;
