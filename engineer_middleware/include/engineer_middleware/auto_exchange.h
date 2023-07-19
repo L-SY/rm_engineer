@@ -393,13 +393,15 @@ private:
   void computeServoMoveError()
   {
     initComputerValue();
-    double roll, pitch, yaw;
+    double roll, pitch, yaw, roll_base, pitch_base, yaw_base;
     std::vector<double> errors;
-    geometry_msgs::TransformStamped tools2exchanger;
+    geometry_msgs::TransformStamped tools2exchanger, base2exchanger;
     try
     {
       tools2exchanger = tf_buffer_.lookupTransform("tools_link", "exchanger", ros::Time(0));
+      base2exchanger = tf_buffer_.lookupTransform("base_link", "exchanger", ros::Time(0));
       quatToRPY(tools2exchanger.transform.rotation, roll, pitch, yaw);
+      quatToRPY(base2exchanger.transform.rotation, roll_base, pitch_base, yaw_base);
     }
     catch (tf2::TransformException& ex)
     {
@@ -408,7 +410,9 @@ private:
     initComputerValue();
     servo_errors_[0] = (process_ == PUSH ? (tools2exchanger.transform.translation.x) :
                                            (tools2exchanger.transform.translation.x - xyz_offset_[0]));
-    servo_errors_[1] = tools2exchanger.transform.translation.y - xyz_offset_[1];
+    servo_errors_[1] = tools2exchanger.transform.translation.y + xyz_offset_[1] * sin(roll_base + M_PI / 6);
+    ROS_INFO_STREAM(roll_base);
+    // ROS_INFO_STREAM(xyz_offset_[1]*sin(roll_base));
     servo_errors_[2] = tools2exchanger.transform.translation.z - xyz_offset_[2];
     servo_errors_[3] = roll;
     servo_errors_[4] = pitch;
@@ -421,10 +425,8 @@ private:
     {
       case YZ:
       {
-        for (int i = 1; i < 3; ++i)
-        {
-          servo_scales_[i] = servo_errors_[i] * servo_p_[i];
-        }
+        servo_scales_[1] = servo_errors_[1] * servo_p_[1];
+        servo_scales_[2] = servo_errors_[2] * servo_p_[2];
       }
       break;
       case YAW:
