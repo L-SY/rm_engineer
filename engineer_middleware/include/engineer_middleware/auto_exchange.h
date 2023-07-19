@@ -110,7 +110,7 @@ public:
 protected:
   tf2_ros::Buffer& tf_buffer_;
   int process_{};
-  bool is_finish_{ false };
+  bool is_finish_{ false }, is_recorded_time_{ false };
   double time_out_{};
   ros::Time start_time_{};
   ros::NodeHandle nh_{};
@@ -267,15 +267,123 @@ private:
     is_found_ = msg->flag;
   }
   JointInfo *yaw_{}, *pitch_{};
-  bool is_found_{ false }, is_recorded_time_{ false };
+  bool is_found_{ false };
   std::vector<double> gimbal_scale_{}, chassis_scale_{};
   ros::Subscriber visual_recognition_sub_{};
   double search_range_{}, confirm_lock_time_{};
 };
 
-// class ProAdjust
-//{
-//};
+class ProAdjust : public ProgressBase
+{
+public:
+  ProAdjust(XmlRpc::XmlRpcValue& pre_adjust, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh)
+    : ProgressBase(pre_adjust, tf_buffer, nh)
+  {
+    ROS_ASSERT(pre_adjust["chassis_p"].getType() == XmlRpc::XmlRpcValue::TypeArray);
+    ROS_ASSERT(pre_adjust["chassis_exchanger_offset"].getType() == XmlRpc::XmlRpcValue::TypeArray);
+    ROS_ASSERT(pre_adjust["chassis_start_vel"].getType() == XmlRpc::XmlRpcValue::TypeArray);
+
+    chassis_p_.resize(3, 0);
+    chassis_start_vel_.resize(3, 0.05);
+    chassis_exchanger_offset_.resize(3, 0);
+    for (int i = 0; i < (int)chassis_exchanger_offset_.size(); ++i)
+    {
+      chassis_p_[i] = pre_adjust["chassis_p"];
+      chassis_start_vel_[i] = pre_adjust["chassis_start_vel"];
+      chassis_exchanger_offset_[i] = pre_adjust["chassis_exchanger_offset_"][i];
+    }
+    ROS_INFO_STREAM("~~~~~~~~~~~~~PRE_ADJUST~~~~~~~~~~~~~~~~");
+  }
+  geometry_msgs::Twist getChassisVelMsg()
+  {
+    return chassis_vel_cmd_;
+  }
+  std::string getChassisCmdFrame()
+  {
+    return chassis_command_source_frame_;
+  }
+  void run() override
+  {
+    enter_pre_adjust_ = true;
+    if (!is_recorded_time_)
+    {
+      start_time_ = ros::Time::now();
+      setChassisTarget(chassis_exchanger_offset_[0], chassis_exchanger_offset_[1], chassis_exchanger_offset_[2]);
+    }
+    if (!is_finish_)
+    {
+      computerChassisVel();
+    }
+    else if (checkTimeout(ros::Time::now() - start_time_))
+    {
+      is_finish_ = true;
+    }
+    else if (isChassisFinish())
+    {
+      is_finish_ = true;
+      ROS_INFO_STREAM("CHASSIS ARRIVED");
+    }
+  }
+
+private:
+  bool isChassisFinish()
+  {
+    return (((chassis_pos_error_[0] <= chassis_xy_tolerance_[0]) &&
+             (chassis_pos_error_[1] <= chassis_xy_tolerance_[1]) && (chassis_yaw_error_ <= chassis_yaw_tolerance_)));
+  }
+  void computerChassisVel()
+  {
+    geometry_msgs::TransformStamped current;
+    current = tf_buffer_.lookupTransform("base_link", "map", ros::Time(0));
+    geometry_msgs::Vector3 error;
+    error.x = chassis_target_.pose.position.x - current.transform.translation.x;
+    error.y = chassis_target_.pose.position.y - current.transform.translation.y;
+
+    double roll, pitch, yaw_current, yaw_goal, error_yaw;
+    quatToRPY(current.transform.rotation, roll, pitch, yaw_current);
+    quatToRPY(chassis_target_.pose.orientation, roll, pitch, yaw_goal);
+    error_yaw = angles::shortest_angular_distance(yaw_current, yaw_goal);
+
+    ROS_INFO_STREAM(error.x);
+    ROS_INFO_STREAM(error.y);
+    ROS_INFO_STREAM(error_yaw);
+
+    chassis_vel_cmd_.linear.x = (error.x / abs(error.x)) * (chassis_start_vel_[0] + chassis_p_[0] * abs(error.x));
+    chassis_vel_cmd_.linear.y = (error.y / abs(error.y)) * (chassis_start_vel_[1] + chassis_p_[1] * abs(error.y));
+    chassis_vel_cmd_.angular.z =
+        (error_yaw / abs(error_yaw)) * (chassis_start_vel_[2] + chassis_p_[2] * abs(error_yaw));
+  }
+  void setChassisTarget(double target_x, double target_y, double yaw_p)
+  {
+    geometry_msgs::TransformStamped exchange2base;
+    double roll, pitch, yaw;
+    exchange2base = tf_buffer_.lookupTransform("base_link", "exchanger", ros::Time(0));
+    quatToRPY(exchange2base.transform.rotation, roll, pitch, yaw);
+    //        ROS_INFO_STREAM(yaw);
+    double goal_x = exchange2base.transform.translation.x - target_x;
+    double goal_y = exchange2base.transform.translation.y - target_y;
+    double goal_yaw = yaw * yaw_p;
+    chassis_original_target_.pose.position.x = target_x;
+    chassis_original_target_.pose.position.y = target_y;
+    tf2::Quaternion quat_tf;
+    quat_tf.setRPY(0, 0, goal_yaw);
+    geometry_msgs::Quaternion quat_msg = tf2::toMsg(quat_tf);
+    chassis_target_.pose.orientation = quat_msg;
+    chassis_target_ = chassis_original_target_;
+
+    tf2::doTransform(chassis_target_, chassis_target_, tf_buffer_.lookupTransform("base_link", "map", ros::Time(0)));
+    chassis_pos_error_[0] = 1e10;
+    chassis_pos_error_[1] = 1e10;
+    chassis_yaw_error_ = 1e10;
+  }
+  bool enter_pre_adjust_{ false };
+  std::string chassis_command_source_frame_{ "base_link" };
+  std::vector<double> chassis_exchanger_offset_{}, chassis_xy_tolerance_{}, chassis_pos_error_{}, chassis_start_vel_{},
+      chassis_p_{};
+  geometry_msgs::Twist chassis_vel_cmd_{};
+  geometry_msgs::PoseStamped chassis_target_{}, chassis_original_target_{};
+  double chassis_yaw_tolerance_{}, chassis_yaw_error_{};
+};
 
 class AutoServoMove : public ProgressBase
 {
@@ -410,9 +518,7 @@ private:
     initComputerValue();
     servo_errors_[0] = (process_ == PUSH ? (tools2exchanger.transform.translation.x) :
                                            (tools2exchanger.transform.translation.x - xyz_offset_[0]));
-    servo_errors_[1] = tools2exchanger.transform.translation.y + xyz_offset_[1] * sin(roll_base + M_PI / 6);
-    ROS_INFO_STREAM(roll_base);
-    // ROS_INFO_STREAM(xyz_offset_[1]*sin(roll_base));
+    servo_errors_[1] = tools2exchanger.transform.translation.y - xyz_offset_[1];
     servo_errors_[2] = tools2exchanger.transform.translation.z - xyz_offset_[2];
     servo_errors_[3] = roll;
     servo_errors_[4] = pitch;
@@ -497,7 +603,7 @@ private:
 
   ros::Time inside_process_start_time_{};
   std_msgs::Bool enter_auto_servo_move_{}, is_exchanger_tf_update_{};
-  bool is_recorded_time_{}, is_enter_auto_{};
+  bool is_enter_auto_{};
   double link7_length_{}, joint7_msg_{};
   ros::Publisher exchanger_tf_update_pub_;
   std::vector<double> xyz_offset_{}, servo_p_{}, servo_errors_{}, servo_scales_{}, servo_error_tolerance_{};
