@@ -127,7 +127,6 @@ public:
     search_range_ = xmlRpcGetDouble(find, "search_range", 0.3);
     ROS_ASSERT(find["yaw"].getType() == XmlRpc::XmlRpcValue::TypeStruct);
     ROS_ASSERT(find["pitch"].getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    ROS_INFO_STREAM(time_out_);
     yaw_ = new JointInfo(find["yaw"]);
     pitch_ = new JointInfo(find["pitch"]);
     confirm_lock_time_ = xmlRpcGetDouble(find, "confirm_lock_time", 10);
@@ -282,14 +281,14 @@ public:
     ROS_ASSERT(pre_adjust["chassis_p"].getType() == XmlRpc::XmlRpcValue::TypeArray);
     ROS_ASSERT(pre_adjust["chassis_exchanger_offset"].getType() == XmlRpc::XmlRpcValue::TypeArray);
     ROS_ASSERT(pre_adjust["chassis_start_vel"].getType() == XmlRpc::XmlRpcValue::TypeArray);
-
     chassis_p_.resize(3, 0);
     chassis_start_vel_.resize(3, 0.05);
     chassis_exchanger_offset_.resize(3, 0);
+    chassis_xy_tolerance_.resize(2, 1e10);
     for (int i = 0; i < (int)chassis_exchanger_offset_.size(); ++i)
     {
-      chassis_p_[i] = pre_adjust["chassis_p"];
-      chassis_start_vel_[i] = pre_adjust["chassis_start_vel"];
+      chassis_p_[i] = pre_adjust["chassis_p"][i];
+      chassis_start_vel_[i] = pre_adjust["chassis_start_vel"][i];
       chassis_exchanger_offset_[i] = pre_adjust["chassis_exchanger_offset_"][i];
     }
     ROS_INFO_STREAM("~~~~~~~~~~~~~PRE_ADJUST~~~~~~~~~~~~~~~~");
@@ -301,6 +300,12 @@ public:
   std::string getChassisCmdFrame()
   {
     return chassis_command_source_frame_;
+  }
+  void init() override
+  {
+    is_finish_ = false;
+    is_recorded_time_ = false;
+    enter_pre_adjust_ = false;
   }
   void run() override
   {
@@ -326,6 +331,21 @@ public:
   }
 
 private:
+  void initComputerValue()
+  {
+    chassis_vel_cmd_.linear.x = 0;
+    chassis_vel_cmd_.linear.y = 0;
+    chassis_vel_cmd_.linear.z = 0;
+    chassis_vel_cmd_.angular.x = 0;
+    chassis_vel_cmd_.angular.y = 0;
+    chassis_vel_cmd_.angular.z = 0;
+  }
+  void nextProcess() override{};
+  void manageProcess() override{};
+  void printProcess() override
+  {
+    ROS_INFO_STREAM("PRE ADJUST");
+  }
   bool isChassisFinish()
   {
     return (((chassis_pos_error_[0] <= chassis_xy_tolerance_[0]) &&
@@ -363,8 +383,8 @@ private:
     double goal_x = exchange2base.transform.translation.x - target_x;
     double goal_y = exchange2base.transform.translation.y - target_y;
     double goal_yaw = yaw * yaw_p;
-    chassis_original_target_.pose.position.x = target_x;
-    chassis_original_target_.pose.position.y = target_y;
+    chassis_original_target_.pose.position.x = goal_x;
+    chassis_original_target_.pose.position.y = goal_y;
     tf2::Quaternion quat_tf;
     quat_tf.setRPY(0, 0, goal_yaw);
     geometry_msgs::Quaternion quat_msg = tf2::toMsg(quat_tf);
@@ -378,8 +398,8 @@ private:
   }
   bool enter_pre_adjust_{ false };
   std::string chassis_command_source_frame_{ "base_link" };
-  std::vector<double> chassis_exchanger_offset_{}, chassis_xy_tolerance_{}, chassis_pos_error_{}, chassis_start_vel_{},
-      chassis_p_{};
+  std::vector<double> chassis_exchanger_offset_, chassis_xy_tolerance_, chassis_pos_error_, chassis_start_vel_,
+      chassis_p_;
   geometry_msgs::Twist chassis_vel_cmd_{};
   geometry_msgs::PoseStamped chassis_target_{}, chassis_original_target_{};
   double chassis_yaw_tolerance_{}, chassis_yaw_error_{};
