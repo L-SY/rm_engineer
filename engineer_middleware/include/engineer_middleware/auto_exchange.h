@@ -7,6 +7,7 @@
 #include <tf2_ros/buffer.h>
 #include <rm_common/ori_tool.h>
 #include <rm_msgs/ExchangerMsg.h>
+#include <control_toolbox/pid.h>
 
 namespace auto_exchange
 {
@@ -412,21 +413,34 @@ public:
     : ProgressBase(auto_servo_move, tf_buffer, nh), joint7_msg_(0.)
   {
     ROS_ASSERT(auto_servo_move["xyz_offset"].getType() == XmlRpc::XmlRpcValue::TypeArray);
-    ROS_ASSERT(auto_servo_move["servo_p"].getType() == XmlRpc::XmlRpcValue::TypeArray);
     ROS_ASSERT(auto_servo_move["servo_error_tolerance"].getType() == XmlRpc::XmlRpcValue::TypeArray);
     ROS_ASSERT(auto_servo_move["link7_length"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
+
     process_ = { YZ };
     enter_auto_servo_move_.data = false;
     xyz_offset_.resize(3, 0.);
-    servo_p_.resize(6, 0.);
+    servo_pid_value_.resize(6, 0.);
     servo_errors_.resize(6, 0.);
     servo_scales_.resize(6, 0.);
     servo_error_tolerance_.resize(6, 0.01);
+    ros::NodeHandle nh_servo_pid = ros::NodeHandle(nh, "servo_pid");
+    ros::NodeHandle nh_pid_x = ros::NodeHandle(nh_servo_pid, "x");
+    ros::NodeHandle nh_pid_y = ros::NodeHandle(nh_servo_pid, "y");
+    ros::NodeHandle nh_pid_z = ros::NodeHandle(nh_servo_pid, "z");
+    ros::NodeHandle nh_pid_roll = ros::NodeHandle(nh_servo_pid, "roll");
+    ros::NodeHandle nh_pid_pitch = ros::NodeHandle(nh_servo_pid, "pitch");
+    ros::NodeHandle nh_pid_yaw = ros::NodeHandle(nh_servo_pid, "yaw");
+    pid_x_.init(ros::NodeHandle(nh_pid_x, "pid"));
+    pid_y_.init(ros::NodeHandle(nh_pid_y, "pid"));
+    pid_z_.init(ros::NodeHandle(nh_pid_z, "pid"));
+    pid_roll_.init(ros::NodeHandle(nh_pid_roll, "pid"));
+    pid_pitch_.init(ros::NodeHandle(nh_pid_pitch, "pid"));
+    pid_yaw_.init(ros::NodeHandle(nh_pid_yaw, "pid"));
+
     for (int i = 0; i < (int)xyz_offset_.size(); ++i)
       xyz_offset_[i] = auto_servo_move["xyz_offset"][i];
-    for (int i = 0; i < (int)servo_p_.size(); ++i)
+    for (int i = 0; i < (int)servo_error_tolerance_.size(); ++i)
     {
-      servo_p_[i] = auto_servo_move["servo_p"][i];
       servo_error_tolerance_[i] = auto_servo_move["servo_error_tolerance"][i];
     }
     exchanger_tf_update_pub_ = nh_.advertise<std_msgs::Bool>("/is_update_exchanger", 1);
@@ -515,9 +529,21 @@ private:
     for (int i = 0; i < (int)servo_scales_.size(); ++i)
     {
       servo_errors_[i] = 0;
+      servo_pid_value_[i] = 0;
       servo_scales_[i] = 0;
     }
   }
+  void computeServoPidValue()
+  {
+    ros::Duration t(0.01);
+    servo_pid_value_[0] = pid_x_.computeCommand(servo_errors_[0], t);
+    servo_pid_value_[1] = pid_y_.computeCommand(servo_errors_[1], t);
+    servo_pid_value_[2] = pid_z_.computeCommand(servo_errors_[2], t);
+    servo_pid_value_[3] = pid_roll_.computeCommand(servo_errors_[3], t);
+    servo_pid_value_[4] = pid_pitch_.computeCommand(servo_errors_[4], t);
+    servo_pid_value_[5] = pid_yaw_.computeCommand(servo_errors_[5], t);
+  }
+
   void computeServoMoveError()
   {
     initComputerValue();
@@ -547,27 +573,28 @@ private:
   void computeServoMoveScale()
   {
     computeServoMoveError();
+    computeServoPidValue();
     switch (process_)
     {
       case YZ:
       {
-        servo_scales_[1] = servo_errors_[1] * servo_p_[1];
-        servo_scales_[2] = servo_errors_[2] * servo_p_[2];
+        servo_scales_[1] = servo_errors_[1] * servo_pid_value_[1];
+        servo_scales_[2] = servo_errors_[2] * servo_pid_value_[2];
       }
       break;
       case YAW:
       {
-        servo_scales_[5] = servo_errors_[5] * servo_p_[5];
+        servo_scales_[5] = servo_errors_[5] * servo_pid_value_[5];
       }
       break;
       case ROLL:
       {
-        servo_scales_[3] = servo_errors_[3] * servo_p_[3];
+        servo_scales_[3] = servo_errors_[3] * servo_pid_value_[3];
       }
       break;
       case Y:
       {
-        servo_scales_[1] = servo_errors_[1] * servo_p_[1];
+        servo_scales_[1] = servo_errors_[1] * servo_pid_value_[1];
       }
       break;
       case PITCH:
@@ -577,17 +604,17 @@ private:
       break;
       case REY:
       {
-        servo_scales_[1] = servo_errors_[1] * servo_p_[1];
+        servo_scales_[1] = servo_errors_[1] * servo_pid_value_[1];
       }
       break;
       case Z:
       {
-        servo_scales_[2] = servo_errors_[2] * servo_p_[2];
+        servo_scales_[2] = servo_errors_[2] * servo_pid_value_[2];
       }
       break;
       case PUSH:
       {
-        servo_scales_[0] = servo_errors_[0] * servo_p_[0];
+        servo_scales_[0] = servo_errors_[0] * servo_pid_value_[0];
       }
       break;
     }
@@ -626,7 +653,8 @@ private:
   bool is_enter_auto_{};
   double link7_length_{}, joint7_msg_{};
   ros::Publisher exchanger_tf_update_pub_;
-  std::vector<double> xyz_offset_{}, servo_p_{}, servo_errors_{}, servo_scales_{}, servo_error_tolerance_{};
+  control_toolbox::Pid pid_x_, pid_y_, pid_z_, pid_roll_, pid_pitch_, pid_yaw_;
+  std::vector<double> xyz_offset_{}, servo_errors_{}, servo_scales_{}, servo_error_tolerance_{}, servo_pid_value_{};
 };
 
 // class MotionMove
