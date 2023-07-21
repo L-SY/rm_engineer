@@ -547,15 +547,13 @@ private:
   void computeServoMoveError()
   {
     initComputerValue();
-    double roll, pitch, yaw, roll_base, pitch_base, yaw_base;
+    double roll, pitch, yaw;
     std::vector<double> errors;
-    geometry_msgs::TransformStamped tools2exchanger, base2exchanger;
+    geometry_msgs::TransformStamped tools2exchanger;
     try
     {
       tools2exchanger = tf_buffer_.lookupTransform("tools_link", "exchanger", ros::Time(0));
-      base2exchanger = tf_buffer_.lookupTransform("base_link", "exchanger", ros::Time(0));
       quatToRPY(tools2exchanger.transform.rotation, roll, pitch, yaw);
-      quatToRPY(base2exchanger.transform.rotation, roll_base, pitch_base, yaw_base);
     }
     catch (tf2::TransformException& ex)
     {
@@ -578,23 +576,23 @@ private:
     {
       case YZ:
       {
-        servo_scales_[1] = servo_errors_[1] * servo_pid_value_[1];
-        servo_scales_[2] = servo_errors_[2] * servo_pid_value_[2];
+        servo_scales_[1] = servo_pid_value_[1];
+        servo_scales_[2] = servo_pid_value_[2];
       }
       break;
       case YAW:
       {
-        servo_scales_[5] = servo_errors_[5] * servo_pid_value_[5];
+        servo_scales_[5] = servo_pid_value_[5];
       }
       break;
       case ROLL:
       {
-        servo_scales_[3] = servo_errors_[3] * servo_pid_value_[3];
+        servo_scales_[3] = servo_pid_value_[3];
       }
       break;
       case Y:
       {
-        servo_scales_[1] = servo_errors_[1] * servo_pid_value_[1];
+        servo_scales_[1] = servo_pid_value_[1];
       }
       break;
       case PITCH:
@@ -604,17 +602,17 @@ private:
       break;
       case REY:
       {
-        servo_scales_[1] = servo_errors_[1] * servo_pid_value_[1];
+        servo_scales_[1] = servo_pid_value_[1];
       }
       break;
       case Z:
       {
-        servo_scales_[2] = servo_errors_[2] * servo_pid_value_[2];
+        servo_scales_[2] = servo_pid_value_[2];
       }
       break;
       case PUSH:
       {
-        servo_scales_[0] = servo_errors_[0] * servo_pid_value_[0];
+        servo_scales_[0] = servo_pid_value_[0];
       }
       break;
     }

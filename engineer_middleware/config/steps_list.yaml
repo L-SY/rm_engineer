@@ -39,9 +39,9 @@ common:
   joint1:
     mechanical:
       down_position: &JOINT1_DOWN_POSITION
-                       -0.09600
+                       -0.02
       up_position: &JOINT1_UP_POSITION
-                     0.43
+                     0.45
     home:
       zero_stone_position: &JOINT1_ZERO_STONE_POSITION
                              0.08
@@ -64,7 +64,7 @@ common:
   joint2:
     mechanical:
       back_position: &JOINT2_BACK_POSITION
-                       0.0001
+                       -0.02
       furthest_position: &JOINT2_FURTHEST_POSITION
                            0.40045
     store:
@@ -112,7 +112,7 @@ common:
   joint4:
     mechanical:
       up_position: &JOINT4_UP_POSITION
-                     0.022
+                     -0.01
       down_position: &JOINT4_DOWN_POSITION
                        1.07
 
@@ -998,7 +998,7 @@ steps_list:
         <<: *JOINT7_UP_POSITION
     - step: "exchange wait"
       arm:
-        joints: [ *JOINT1_STORE_ORE_POSITION, *JOINT2_READY_TO_ACCESS_STONE_POSITION, *JOINT3_LF_POSITION, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_UP_POSITION ]
+        joints: [ *JOINT1_TWO_STONE_POSITION, *JOINT2_READY_TO_ACCESS_STONE_POSITION, *JOINT3_LF_POSITION, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_UP_POSITION ]
         common:
           <<: *NORMALLY
         tolerance:
