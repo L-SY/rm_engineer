@@ -80,7 +80,7 @@ common:
   joint3:
     mechanical:
       left_position: &JOINT3_LF_POSITION
-                       0.33
+                       0.28
       mid_position: &JOINT3_MID_POSITION
                       0.0001
       right_position: &JOINT3_RT_POSITION
@@ -1003,6 +1003,13 @@ steps_list:
           <<: *NORMALLY
         tolerance:
           <<: *NORMAL_TOLERANCE
+    - step: "close gripper"
+      gripper:
+        <<: *CLOSE_GRIPPER
+    - step: "gimbal look side"
+      gimbal:
+        <<: *ISLAND_POS
+
 
   REVERSE_TEST:
     - step: "test1"

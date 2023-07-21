@@ -293,14 +293,6 @@ public:
     }
     ROS_INFO_STREAM("~~~~~~~~~~~~~PRE_ADJUST~~~~~~~~~~~~~~~~");
   }
-  geometry_msgs::Twist getChassisVelMsg()
-  {
-    return chassis_vel_cmd_;
-  }
-  std::string getChassisCmdFrame()
-  {
-    return chassis_command_source_frame_;
-  }
   void init() override
   {
     is_finish_ = false;
@@ -328,6 +320,14 @@ public:
       is_finish_ = true;
       ROS_INFO_STREAM("CHASSIS ARRIVED");
     }
+  }
+  geometry_msgs::Twist getChassisVelMsg()
+  {
+    return chassis_vel_cmd_;
+  }
+  std::string getChassisCmdFrame()
+  {
+    return chassis_command_source_frame_;
   }
 
 private:
@@ -454,10 +454,10 @@ public:
       ROS_INFO_STREAM("ROLL");
     else if (process_ == Y)
       ROS_INFO_STREAM("Y");
-    else if (process_ == REY)
-      ROS_INFO_STREAM("REY");
     else if (process_ == PITCH)
       ROS_INFO_STREAM("PITCH");
+    else if (process_ == REY)
+      ROS_INFO_STREAM("REY");
     else if (process_ == Z)
       ROS_INFO_STREAM("Z");
     else if (process_ == PUSH)
@@ -467,9 +467,9 @@ public:
   }
   void run() override
   {
-    enter_auto_servo_move_.data = true;
     is_exchanger_tf_update_.data = false;
     exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
+    enter_auto_servo_move_.data = true;
     if (!is_finish_)
     {
       is_enter_auto_ = true;
