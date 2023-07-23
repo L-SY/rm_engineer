@@ -551,8 +551,8 @@ public:
   ChassisMotion(XmlRpc::XmlRpcValue& motion, ChassisInterface& interface)
     : MotionBase<ChassisInterface>(motion, interface)
   {
-    chassis_tolerance_position_ = xmlRpcGetDouble(motion, "chassis_tolerance_position_", 0.01);
-    chassis_tolerance_angular_ = xmlRpcGetDouble(motion, "chassis_tolerance_angular_", 0.01);
+    chassis_tolerance_position_ = xmlRpcGetDouble(motion, "chassis_tolerance_position", 0.01);
+    chassis_tolerance_angular_ = xmlRpcGetDouble(motion, "chassis_tolerance_angular", 0.01);
     if (motion.hasMember("frame"))
       target_.header.frame_id = std::string(motion["frame"]);
     if (motion.hasMember("position"))
