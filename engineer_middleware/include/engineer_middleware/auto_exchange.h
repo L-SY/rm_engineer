@@ -535,13 +535,13 @@ private:
   }
   void computeServoPidValue()
   {
-    ros::Duration t(0.01);
-    servo_pid_value_[0] = pid_x_.computeCommand(servo_errors_[0], t);
-    servo_pid_value_[1] = pid_y_.computeCommand(servo_errors_[1], t);
-    servo_pid_value_[2] = pid_z_.computeCommand(servo_errors_[2], t);
-    servo_pid_value_[3] = pid_roll_.computeCommand(servo_errors_[3], t);
-    servo_pid_value_[4] = pid_pitch_.computeCommand(servo_errors_[4], t);
-    servo_pid_value_[5] = pid_yaw_.computeCommand(servo_errors_[5], t);
+    ros::Duration dt = ros::Time::now() - last_time_;
+    servo_pid_value_[0] = pid_x_.computeCommand(servo_errors_[0], dt);
+    servo_pid_value_[1] = pid_y_.computeCommand(servo_errors_[1], dt);
+    servo_pid_value_[2] = pid_z_.computeCommand(servo_errors_[2], dt);
+    servo_pid_value_[3] = pid_roll_.computeCommand(servo_errors_[3], dt);
+    servo_pid_value_[4] = pid_pitch_.computeCommand(servo_errors_[4], dt);
+    servo_pid_value_[5] = pid_yaw_.computeCommand(servo_errors_[5], dt);
   }
 
   void computeServoMoveError()
@@ -570,6 +570,7 @@ private:
   }
   void computeServoMoveScale()
   {
+    last_time_ = ros::Time::now();
     computeServoMoveError();
     computeServoPidValue();
     switch (process_)
@@ -646,7 +647,7 @@ private:
     }
   }
 
-  ros::Time inside_process_start_time_{};
+  ros::Time last_time_;
   std_msgs::Bool enter_auto_servo_move_{}, is_exchanger_tf_update_{};
   bool is_enter_auto_{};
   double link7_length_{}, joint7_msg_{};
