@@ -32,7 +32,7 @@ enum ServoMoveProcess
   Y,
   PITCH,
   REY,
-  Z,
+  REZ,
   PUSH,
   DONE
 };
@@ -430,12 +430,16 @@ public:
     ros::NodeHandle nh_servo_pid = ros::NodeHandle(nh, "servo_pid");
     ros::NodeHandle nh_pid_x = ros::NodeHandle(nh_servo_pid, "x");
     ros::NodeHandle nh_pid_y = ros::NodeHandle(nh_servo_pid, "y");
+    ros::NodeHandle nh_pid_re_y = ros::NodeHandle(nh_servo_pid, "re_y");
+    ros::NodeHandle nh_pid_re_z = ros::NodeHandle(nh_servo_pid, "re_z");
     ros::NodeHandle nh_pid_z = ros::NodeHandle(nh_servo_pid, "z");
     ros::NodeHandle nh_pid_roll = ros::NodeHandle(nh_servo_pid, "roll");
     ros::NodeHandle nh_pid_pitch = ros::NodeHandle(nh_servo_pid, "pitch");
     ros::NodeHandle nh_pid_yaw = ros::NodeHandle(nh_servo_pid, "yaw");
     pid_x_.init(ros::NodeHandle(nh_pid_x, "pid"));
     pid_y_.init(ros::NodeHandle(nh_pid_y, "pid"));
+    pid_re_y_.init(ros::NodeHandle(nh_pid_re_y, "pid"));
+    pid_re_z_.init(ros::NodeHandle(nh_pid_re_z, "pid"));
     pid_z_.init(ros::NodeHandle(nh_pid_z, "pid"));
     pid_roll_.init(ros::NodeHandle(nh_pid_roll, "pid"));
     pid_pitch_.init(ros::NodeHandle(nh_pid_pitch, "pid"));
@@ -476,8 +480,8 @@ public:
       ROS_INFO_STREAM("PITCH");
     else if (process_ == REY)
       ROS_INFO_STREAM("REY");
-    else if (process_ == Z)
-      ROS_INFO_STREAM("Z");
+    else if (process_ == REZ)
+      ROS_INFO_STREAM("REZ");
     else if (process_ == PUSH)
       ROS_INFO_STREAM("PUSH");
     else if (process_ == DONE)
@@ -562,11 +566,20 @@ private:
     servo_errors_[5] = yaw;
     ros::Duration dt = ros::Time::now() - last_time_;
     last_time_ = ros::Time::now();
-    ROS_INFO_STREAM(dt);
 
     servo_pid_value_[0] = pid_x_.computeCommand(servo_errors_[0], dt);
-    servo_pid_value_[1] = pid_y_.computeCommand(servo_errors_[1], dt);
-    servo_pid_value_[2] = pid_z_.computeCommand(servo_errors_[2], dt);
+    if (process_ != REY)
+    {
+      servo_pid_value_[1] = pid_y_.computeCommand(servo_errors_[1], dt);
+    }
+    else
+      servo_pid_value_[1] = pid_re_y_.computeCommand(servo_errors_[1], dt);
+    if (process_ != REZ)
+    {
+      servo_pid_value_[2] = pid_z_.computeCommand(servo_errors_[2], dt);
+    }
+    else
+      servo_pid_value_[2] = pid_re_z_.computeCommand(servo_errors_[2], dt);
     servo_pid_value_[3] = pid_roll_.computeCommand(servo_errors_[3], dt);
     servo_pid_value_[4] = pid_pitch_.computeCommand(servo_errors_[4], dt);
     servo_pid_value_[5] = pid_yaw_.computeCommand(servo_errors_[5], dt);
@@ -607,7 +620,7 @@ private:
         servo_scales_[1] = servo_pid_value_[1];
       }
       break;
-      case Z:
+      case REZ:
       {
         servo_scales_[2] = servo_pid_value_[2];
       }
@@ -627,8 +640,16 @@ private:
       if (servo_scales_[i] != 0)
       {
         move_joint_num++;
-        if (abs(servo_errors_[i]) <= servo_error_tolerance_[i])
-          arrived_joint_num++;
+        if (process_ == YZ)
+        {
+          if (abs(servo_errors_[i]) <= 10 * servo_error_tolerance_[i])
+            arrived_joint_num++;
+        }
+        else
+        {
+          if (abs(servo_errors_[i]) <= servo_error_tolerance_[i])
+            arrived_joint_num++;
+        }
       }
     }
     if (checkTimeout(ros::Time::now() - start_time_))
@@ -658,7 +679,7 @@ private:
   bool is_enter_auto_{};
   double link7_length_{}, joint7_msg_{}, rectify_x_, rectify_z_;
   ros::Publisher exchanger_tf_update_pub_;
-  control_toolbox::Pid pid_x_, pid_y_, pid_z_, pid_roll_, pid_pitch_, pid_yaw_;
+  control_toolbox::Pid pid_x_, pid_y_, pid_re_y_, pid_re_z_, pid_z_, pid_roll_, pid_pitch_, pid_yaw_;
   std::vector<double> xyz_offset_{}, servo_errors_{}, servo_scales_{}, servo_error_tolerance_{}, servo_pid_value_{};
 };
 
