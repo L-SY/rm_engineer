@@ -682,7 +682,7 @@ public:
   {
     process_ = FIND;
     find_ = new Find(auto_exchange["find"], tf_buffer, nh);
-    pro_adjust_ = new ProAdjust(auto_exchange["pro_adjust"], tf_buffer, nh);
+    pre_adjust_ = new ProAdjust(auto_exchange["pre_adjust"], tf_buffer, nh);
     auto_servo_move_ = new AutoServoMove(auto_exchange["auto_servo_move"], tf_buffer, nh);
   }
   void run() override
@@ -698,7 +698,7 @@ public:
   void init() override
   {
     find_->init();
-    pro_adjust_->init();
+    pre_adjust_->init();
     auto_servo_move_->init();
   }
   void nextProcess() override
@@ -708,10 +708,10 @@ public:
       process_ = PRE_ADJUST;
       find_->init();
     }
-    else if (pro_adjust_->checkIsFinish())
+    else if (pre_adjust_->checkIsFinish())
     {
       process_ = MOVE;
-      pro_adjust_->init();
+      pre_adjust_->init();
     }
     else if (auto_servo_move_->checkIsFinish())
     {
@@ -727,7 +727,7 @@ public:
         find_->run();
         break;
       case PRE_ADJUST:
-        pro_adjust_->run();
+        pre_adjust_->run();
         break;
       case MOVE:
         auto_servo_move_->run();
@@ -749,7 +749,7 @@ private:
       ROS_INFO_STREAM("FINISH");
   }
   Find* find_{};
-  ProAdjust* pro_adjust_{};
+  ProAdjust* pre_adjust_{};
   AutoServoMove* auto_servo_move_{};
 };
 }  // namespace auto_exchange
