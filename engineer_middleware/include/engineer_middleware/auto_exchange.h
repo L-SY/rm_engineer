@@ -98,6 +98,10 @@ public:
   virtual void manageProcess() = 0;
   virtual void run() = 0;
   virtual void printProcess() = 0;
+  bool checkIsFinish()
+  {
+    return is_finish_;
+  }
   bool checkTimeout(ros::Duration period)
   {
     if (period.toSec() > time_out_)
@@ -670,4 +674,82 @@ private:
 //{
 //};
 
+class AutoExchange : public ProgressBase
+{
+public:
+  AutoExchange(XmlRpc::XmlRpcValue& auto_exchange, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh)
+    : ProgressBase(auto_exchange, tf_buffer, nh)
+  {
+    process_ = FIND;
+    find_ = new Find(auto_exchange["find"], tf_buffer, nh);
+    pro_adjust_ = new ProAdjust(auto_exchange["pro_adjust"], tf_buffer, nh);
+    auto_servo_move_ = new AutoServoMove(auto_exchange["auto_servo_move"], tf_buffer, nh);
+  }
+  void run() override
+  {
+    if (!is_finish_)
+      manageProcess();
+    else if (checkIsFinish())
+    {
+      is_finish_ = true;
+      ROS_INFO_STREAM("TIME OUT");
+    }
+  }
+  void init() override
+  {
+    find_->init();
+    pro_adjust_->init();
+    auto_servo_move_->init();
+  }
+  void nextProcess() override
+  {
+    if (find_->checkIsFinish())
+    {
+      process_ = PRE_ADJUST;
+      find_->init();
+    }
+    else if (pro_adjust_->checkIsFinish())
+    {
+      process_ = MOVE;
+      pro_adjust_->init();
+    }
+    else if (auto_servo_move_->checkIsFinish())
+    {
+      process_ = FINISH;
+      auto_servo_move_->init();
+    }
+  }
+  void manageProcess() override
+  {
+    switch (process_)
+    {
+      case FIND:
+        find_->run();
+        break;
+      case PRE_ADJUST:
+        pro_adjust_->run();
+        break;
+      case MOVE:
+        auto_servo_move_->run();
+        break;
+    }
+    nextProcess();
+  }
+
+private:
+  void printProcess() override
+  {
+    if (process_ == FIND)
+      ROS_INFO_STREAM("FIND");
+    else if (process_ == PRE_ADJUST)
+      ROS_INFO_STREAM("PRE_ADJUST");
+    else if (process_ == MOVE)
+      ROS_INFO_STREAM("MOVE");
+    else if (process_ == FINISH)
+      ROS_INFO_STREAM("FINISH");
+  }
+  Find* find_{};
+  ProAdjust* pro_adjust_{};
+  AutoServoMove* auto_servo_move_{};
+};
 }  // namespace auto_exchange
