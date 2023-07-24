@@ -533,17 +533,6 @@ private:
       servo_scales_[i] = 0;
     }
   }
-  void computeServoPidValue()
-  {
-    ros::Duration dt = ros::Time::now() - last_time_;
-    servo_pid_value_[0] = pid_x_.computeCommand(servo_errors_[0], dt);
-    servo_pid_value_[1] = pid_y_.computeCommand(servo_errors_[1], dt);
-    servo_pid_value_[2] = pid_z_.computeCommand(servo_errors_[2], dt);
-    servo_pid_value_[3] = pid_roll_.computeCommand(servo_errors_[3], dt);
-    servo_pid_value_[4] = pid_pitch_.computeCommand(servo_errors_[4], dt);
-    servo_pid_value_[5] = pid_yaw_.computeCommand(servo_errors_[5], dt);
-  }
-
   void computeServoMoveError()
   {
     initComputerValue();
@@ -567,12 +556,20 @@ private:
     servo_errors_[3] = roll;
     servo_errors_[4] = pitch;
     servo_errors_[5] = yaw;
+    ros::Duration dt = ros::Time::now() - last_time_;
+    last_time_ = ros::Time::now();
+    ROS_INFO_STREAM(dt);
+
+    servo_pid_value_[0] = pid_x_.computeCommand(servo_errors_[0], dt);
+    servo_pid_value_[1] = pid_y_.computeCommand(servo_errors_[1], dt);
+    servo_pid_value_[2] = pid_z_.computeCommand(servo_errors_[2], dt);
+    servo_pid_value_[3] = pid_roll_.computeCommand(servo_errors_[3], dt);
+    servo_pid_value_[4] = pid_pitch_.computeCommand(servo_errors_[4], dt);
+    servo_pid_value_[5] = pid_yaw_.computeCommand(servo_errors_[5], dt);
   }
   void computeServoMoveScale()
   {
-    last_time_ = ros::Time::now();
     computeServoMoveError();
-    computeServoPidValue();
     switch (process_)
     {
       case YZ:
@@ -646,11 +643,16 @@ private:
         is_finish_ = true;
     }
   }
+  void rectifyForLink7(double theta, double link7_length)
+  {
+    rectify_x_ = link7_length_ * pow(sin(theta), 2) / (tan(M_PI_2 - theta / 2));
+    rectify_z_ = link7_length_ * sin(theta) * cos(theta) / (tan(M_PI_2 - theta / 2));
+  }
 
   ros::Time last_time_;
   std_msgs::Bool enter_auto_servo_move_{}, is_exchanger_tf_update_{};
   bool is_enter_auto_{};
-  double link7_length_{}, joint7_msg_{};
+  double link7_length_{}, joint7_msg_{}, rectify_x_, rectify_z_;
   ros::Publisher exchanger_tf_update_pub_;
   control_toolbox::Pid pid_x_, pid_y_, pid_z_, pid_roll_, pid_pitch_, pid_yaw_;
   std::vector<double> xyz_offset_{}, servo_errors_{}, servo_scales_{}, servo_error_tolerance_{}, servo_pid_value_{};
