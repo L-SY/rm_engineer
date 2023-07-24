@@ -8,6 +8,7 @@
 #include <rm_common/ori_tool.h>
 #include <rm_msgs/ExchangerMsg.h>
 #include <control_toolbox/pid.h>
+#include <angles/angles.h>
 
 namespace auto_exchange
 {
@@ -294,8 +295,7 @@ public:
       tolerance = chassis_move_config["tolerance"];
       offset_refer_exchanger = chassis_move_config["offset_refer_exchanger"];
       ros::NodeHandle nh_chassis_move_config = ros::NodeHandle(nh, name);
-      ros::NodeHandle nh_pid = ros::NodeHandle(nh_chassis_move_config, "pid");
-      pid.init(nh_pid);
+      pid.init(ros::NodeHandle(nh_chassis_move_config, "pid"));
     }
     bool isFinish()
     {
@@ -303,7 +303,10 @@ public:
     }
     double computerVel(ros::Duration dt)
     {
-      return (error / abs(error)) * (start_vel + pid.computeCommand(error, dt));
+      // ROS_INFO_STREAM(name << "pid:  " << pid.computeCommand(error, dt));
+      double vel = (start_vel + pid.computeCommand(error, dt));
+      int direction = error / abs(error);
+      return abs(vel) >= max_vel ? direction * max_vel : direction * vel;
     }
   };
   ProAdjust(XmlRpc::XmlRpcValue& pre_adjust, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh)
@@ -326,6 +329,7 @@ public:
     if (!is_recorded_time_)
     {
       start_time_ = ros::Time::now();
+      last_time_ = ros::Time::now();
       setChassisTarget(x_.offset_refer_exchanger, y_.offset_refer_exchanger, yaw_.offset_refer_exchanger);
     }
     if (!is_finish_)
@@ -378,37 +382,48 @@ private:
     x_.error = chassis_target_.pose.position.x - current.transform.translation.x;
     y_.error = chassis_target_.pose.position.y - current.transform.translation.y;
 
-    double roll, pitch, yaw_current, yaw_goal, error_yaw;
+    double roll, pitch, yaw_current, yaw_goal;
     quatToRPY(current.transform.rotation, roll, pitch, yaw_current);
     quatToRPY(chassis_target_.pose.orientation, roll, pitch, yaw_goal);
     yaw_.error = angles::shortest_angular_distance(yaw_current, yaw_goal);
 
-    ROS_INFO_STREAM(x_.error);
-    ROS_INFO_STREAM(y_.error);
-    ROS_INFO_STREAM(yaw_.error);
-
     ros::Duration dt = ros::Time::now() - last_time_;
-    chassis_vel_cmd_.linear.x = x_.computerVel(dt);
-    chassis_vel_cmd_.linear.y = y_.computerVel(dt);
-    chassis_vel_cmd_.angular.z = yaw_.computerVel(dt);
+    if (!y_.isFinish())
+    {
+      chassis_vel_cmd_.linear.y = y_.computerVel(dt);
+      chassis_vel_cmd_.linear.x = 0.;
+      chassis_vel_cmd_.angular.z = 0.;
+    }
+    else if (y_.isFinish() && !x_.isFinish())
+    {
+      chassis_vel_cmd_.linear.x = x_.computerVel(dt);
+      chassis_vel_cmd_.linear.y = 0.;
+      chassis_vel_cmd_.angular.z = 0.;
+    }
+    else if (y_.isFinish() && x_.isFinish())
+    {
+      chassis_vel_cmd_.linear.x = 0.;
+      chassis_vel_cmd_.linear.y = 0.;
+      chassis_vel_cmd_.angular.z = yaw_.computerVel(dt);
+    }
     last_time_ = ros::Time::now();
   }
   void setChassisTarget(double target_x, double target_y, double yaw_p)
   {
-    geometry_msgs::TransformStamped exchange2base;
+    geometry_msgs::TransformStamped base2exchange;
     double roll, pitch, yaw;
-    exchange2base = tf_buffer_.lookupTransform("base_link", "exchanger", ros::Time(0));
-    quatToRPY(exchange2base.transform.rotation, roll, pitch, yaw);
-    //        ROS_INFO_STREAM(yaw);
-    double goal_x = exchange2base.transform.translation.x - target_x;
-    double goal_y = exchange2base.transform.translation.y - target_y;
+    base2exchange = tf_buffer_.lookupTransform("base_link", "exchanger", ros::Time(0));
+    quatToRPY(base2exchange.transform.rotation, roll, pitch, yaw);
+
+    double goal_x = base2exchange.transform.translation.x - target_x;
+    double goal_y = base2exchange.transform.translation.y - target_y;
     double goal_yaw = yaw * yaw_p;
     chassis_original_target_.pose.position.x = goal_x;
     chassis_original_target_.pose.position.y = goal_y;
     tf2::Quaternion quat_tf;
     quat_tf.setRPY(0, 0, goal_yaw);
     geometry_msgs::Quaternion quat_msg = tf2::toMsg(quat_tf);
-    chassis_target_.pose.orientation = quat_msg;
+    chassis_original_target_.pose.orientation = quat_msg;
     chassis_target_ = chassis_original_target_;
 
     tf2::doTransform(chassis_target_, chassis_target_, tf_buffer_.lookupTransform("base_link", "map", ros::Time(0)));
