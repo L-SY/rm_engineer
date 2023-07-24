@@ -280,22 +280,38 @@ private:
 class ProAdjust : public ProgressBase
 {
 public:
+  struct ChassisSingleDirectionMove
+  {
+    std::string name;
+    double tolerance, start_vel, offset_refer_exchanger, max_vel, error;
+    control_toolbox::Pid pid;
+    void init(XmlRpc::XmlRpcValue& chassis_move_config, std::string config_name, ros::NodeHandle& nh)
+    {
+      name = config_name;
+      error = 1e10;
+      max_vel = chassis_move_config["max_vel"];
+      start_vel = chassis_move_config["start_vel"];
+      tolerance = chassis_move_config["tolerance"];
+      offset_refer_exchanger = chassis_move_config["offset_refer_exchanger"];
+      ros::NodeHandle nh_chassis_move_config = ros::NodeHandle(nh, name);
+      ros::NodeHandle nh_pid = ros::NodeHandle(nh_chassis_move_config, "pid");
+      pid.init(nh_pid);
+    }
+    bool isFinish()
+    {
+      return error <= tolerance;
+    }
+    double computerVel(ros::Duration dt)
+    {
+      return (error / abs(error)) * (start_vel + pid.computeCommand(error, dt));
+    }
+  };
   ProAdjust(XmlRpc::XmlRpcValue& pre_adjust, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh)
     : ProgressBase(pre_adjust, tf_buffer, nh)
   {
-    ROS_ASSERT(pre_adjust["chassis_p"].getType() == XmlRpc::XmlRpcValue::TypeArray);
-    ROS_ASSERT(pre_adjust["chassis_exchanger_offset"].getType() == XmlRpc::XmlRpcValue::TypeArray);
-    ROS_ASSERT(pre_adjust["chassis_start_vel"].getType() == XmlRpc::XmlRpcValue::TypeArray);
-    chassis_p_.resize(3, 0);
-    chassis_start_vel_.resize(3, 0.05);
-    chassis_exchanger_offset_.resize(3, 0);
-    chassis_xy_tolerance_.resize(2, 1e10);
-    for (int i = 0; i < (int)chassis_exchanger_offset_.size(); ++i)
-    {
-      chassis_p_[i] = pre_adjust["chassis_p"][i];
-      chassis_start_vel_[i] = pre_adjust["chassis_start_vel"][i];
-      chassis_exchanger_offset_[i] = pre_adjust["chassis_exchanger_offset_"][i];
-    }
+    x_.init(pre_adjust["x"], "x", nh);
+    y_.init(pre_adjust["y"], "y", nh);
+    yaw_.init(pre_adjust["yaw"], "yaw", nh);
     ROS_INFO_STREAM("~~~~~~~~~~~~~PRE_ADJUST~~~~~~~~~~~~~~~~");
   }
   void init() override
@@ -310,7 +326,7 @@ public:
     if (!is_recorded_time_)
     {
       start_time_ = ros::Time::now();
-      setChassisTarget(chassis_exchanger_offset_[0], chassis_exchanger_offset_[1], chassis_exchanger_offset_[2]);
+      setChassisTarget(x_.offset_refer_exchanger, y_.offset_refer_exchanger, yaw_.offset_refer_exchanger);
     }
     if (!is_finish_)
     {
@@ -353,30 +369,29 @@ private:
   }
   bool isChassisFinish()
   {
-    return (((chassis_pos_error_[0] <= chassis_xy_tolerance_[0]) &&
-             (chassis_pos_error_[1] <= chassis_xy_tolerance_[1]) && (chassis_yaw_error_ <= chassis_yaw_tolerance_)));
+    return (x_.isFinish() && y_.isFinish() && yaw_.isFinish());
   }
   void computerChassisVel()
   {
     geometry_msgs::TransformStamped current;
     current = tf_buffer_.lookupTransform("base_link", "map", ros::Time(0));
-    geometry_msgs::Vector3 error;
-    error.x = chassis_target_.pose.position.x - current.transform.translation.x;
-    error.y = chassis_target_.pose.position.y - current.transform.translation.y;
+    x_.error = chassis_target_.pose.position.x - current.transform.translation.x;
+    y_.error = chassis_target_.pose.position.y - current.transform.translation.y;
 
     double roll, pitch, yaw_current, yaw_goal, error_yaw;
     quatToRPY(current.transform.rotation, roll, pitch, yaw_current);
     quatToRPY(chassis_target_.pose.orientation, roll, pitch, yaw_goal);
-    error_yaw = angles::shortest_angular_distance(yaw_current, yaw_goal);
+    yaw_.error = angles::shortest_angular_distance(yaw_current, yaw_goal);
 
-    ROS_INFO_STREAM(error.x);
-    ROS_INFO_STREAM(error.y);
-    ROS_INFO_STREAM(error_yaw);
+    ROS_INFO_STREAM(x_.error);
+    ROS_INFO_STREAM(y_.error);
+    ROS_INFO_STREAM(yaw_.error);
 
-    chassis_vel_cmd_.linear.x = (error.x / abs(error.x)) * (chassis_start_vel_[0] + chassis_p_[0] * abs(error.x));
-    chassis_vel_cmd_.linear.y = (error.y / abs(error.y)) * (chassis_start_vel_[1] + chassis_p_[1] * abs(error.y));
-    chassis_vel_cmd_.angular.z =
-        (error_yaw / abs(error_yaw)) * (chassis_start_vel_[2] + chassis_p_[2] * abs(error_yaw));
+    ros::Duration dt = ros::Time::now() - last_time_;
+    chassis_vel_cmd_.linear.x = x_.computerVel(dt);
+    chassis_vel_cmd_.linear.y = y_.computerVel(dt);
+    chassis_vel_cmd_.angular.z = yaw_.computerVel(dt);
+    last_time_ = ros::Time::now();
   }
   void setChassisTarget(double target_x, double target_y, double yaw_p)
   {
@@ -397,17 +412,13 @@ private:
     chassis_target_ = chassis_original_target_;
 
     tf2::doTransform(chassis_target_, chassis_target_, tf_buffer_.lookupTransform("base_link", "map", ros::Time(0)));
-    chassis_pos_error_[0] = 1e10;
-    chassis_pos_error_[1] = 1e10;
-    chassis_yaw_error_ = 1e10;
   }
   bool enter_pre_adjust_{ false };
+  ros::Time last_time_;
   std::string chassis_command_source_frame_{ "base_link" };
-  std::vector<double> chassis_exchanger_offset_, chassis_xy_tolerance_, chassis_pos_error_, chassis_start_vel_,
-      chassis_p_;
   geometry_msgs::Twist chassis_vel_cmd_{};
   geometry_msgs::PoseStamped chassis_target_{}, chassis_original_target_{};
-  double chassis_yaw_tolerance_{}, chassis_yaw_error_{};
+  ChassisSingleDirectionMove x_, y_, yaw_;
 };
 
 class AutoServoMove : public ProgressBase
