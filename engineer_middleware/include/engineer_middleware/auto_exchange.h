@@ -303,7 +303,6 @@ public:
     }
     double computerVel(ros::Duration dt)
     {
-      // ROS_INFO_STREAM(name << "pid:  " << pid.computeCommand(error, dt));
       double vel = (start_vel + pid.computeCommand(error, dt));
       int direction = error / abs(error);
       return abs(vel) >= max_vel ? direction * max_vel : direction * vel;
@@ -315,7 +314,7 @@ public:
     x_.init(pre_adjust["x"], "x", nh);
     y_.init(pre_adjust["y"], "y", nh);
     yaw_.init(pre_adjust["yaw"], "yaw", nh);
-    exchanger_tf_update_pub_ = nh_.advertise<std_msgs::Bool>("/is_update_exchanger", 1);
+    //    exchanger_tf_update_pub_ = nh_.advertise<std_msgs::Bool>("/is_update_exchanger", 1);
     ROS_INFO_STREAM("~~~~~~~~~~~~~PRE_ADJUST~~~~~~~~~~~~~~~~");
   }
   void init() override
@@ -323,9 +322,9 @@ public:
     is_finish_ = false;
     is_recorded_time_ = false;
     enter_pre_adjust_ = false;
-    // tf update
-    is_exchanger_tf_update_.data = true;
-    exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
+    //    // tf update
+    //    is_exchanger_tf_update_.data = true;
+    //    exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
   }
   void run() override
   {
@@ -440,12 +439,13 @@ private:
   }
   bool enter_pre_adjust_{ false };
   ros::Time last_time_;
-  std_msgs::Bool is_exchanger_tf_update_{};
-  ros::Publisher exchanger_tf_update_pub_;
   std::string chassis_command_source_frame_{ "base_link" };
   geometry_msgs::Twist chassis_vel_cmd_{};
   geometry_msgs::PoseStamped chassis_target_{}, chassis_original_target_{};
   ChassisSingleDirectionMove x_, y_, yaw_;
+  // tf update
+  std_msgs::Bool is_exchanger_tf_update_{};
+  ros::Publisher exchanger_tf_update_pub_;
 };
 
 class AutoServoMove : public ProgressBase
@@ -744,9 +744,18 @@ public:
     find_ = new Find(auto_exchange["find"], tf_buffer, nh);
     pre_adjust_ = new ProAdjust(auto_exchange["pre_adjust"], tf_buffer, nh);
     auto_servo_move_ = new AutoServoMove(auto_exchange["auto_servo_move"], tf_buffer, nh);
+    exchanger_tf_update_pub_ = nh_.advertise<std_msgs::Bool>("/is_update_exchanger", 1);
   }
   void run() override
   {
+    if (!is_recorded_time_)
+    {
+      is_recorded_time_ = true;
+      start_time_ = ros::Time::now();
+      // tf update
+      is_exchanger_tf_update_.data = false;
+      exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
+    }
     if (!is_finish_)
       manageProcess();
     else if (checkIsFinish())
@@ -760,6 +769,11 @@ public:
     find_->init();
     pre_adjust_->init();
     auto_servo_move_->init();
+    is_recorded_time_ = false;
+    is_finish_ = false;
+    // tf update
+    is_exchanger_tf_update_.data = true;
+    exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
   }
   void nextProcess() override
   {
@@ -811,5 +825,8 @@ private:
   Find* find_{};
   ProAdjust* pre_adjust_{};
   AutoServoMove* auto_servo_move_{};
+  // tf update
+  std_msgs::Bool is_exchanger_tf_update_{};
+  ros::Publisher exchanger_tf_update_pub_;
 };
 }  // namespace auto_exchange
