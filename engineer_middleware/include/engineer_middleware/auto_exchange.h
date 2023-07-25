@@ -158,7 +158,7 @@ public:
     pitch_ = new JointInfo(find["pitch"]);
     confirm_lock_time_ = xmlRpcGetDouble(find, "confirm_lock_time", 10);
     visual_recognition_sub_ =
-        nh_.subscribe<rm_msgs::ExchangerMsg>("/pnp_publisher", 10, &Find::visualRecognitionCallback, this);
+        nh_.subscribe<rm_msgs::ExchangerMsg>("/pnp_publisher", 1, &Find::visualRecognitionCallback, this);
   }
   void init() override
   {
@@ -316,7 +316,7 @@ public:
     }
     bool isFinish()
     {
-      return error <= tolerance;
+      return abs(error) <= tolerance;
     }
     double computerVel(ros::Duration dt)
     {
@@ -349,6 +349,7 @@ public:
       {
         is_finish_ = true;
         initComputerValue();
+        ROS_INFO_STREAM("CHASSIS TIMEOUT");
       }
       else if (isChassisFinish())
       {
@@ -726,9 +727,6 @@ public:
     {
       is_recorded_time_ = true;
       start_time_ = ros::Time::now();
-      // tf update
-      is_exchanger_tf_update_.data = false;
-      exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
     }
     if (!is_finish_)
     {
@@ -766,11 +764,21 @@ private:
         find_->run();
         break;
       case PRE_ADJUST:
+      {
+        // tf update
+        is_exchanger_tf_update_.data = false;
+        exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
         pre_adjust_->run();
-        break;
+      }
+      break;
       case MOVE:
+      {
+        // tf update
+        is_exchanger_tf_update_.data = false;
+        exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
         auto_servo_move_->run();
-        break;
+      }
+      break;
     }
     nextProcess();
   }
