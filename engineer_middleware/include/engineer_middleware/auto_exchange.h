@@ -101,6 +101,7 @@ public:
     enter_flag_ = false;
   }
   virtual void nextProcess() = 0;
+  //  virtual void runProcess() = 0;
   virtual void manageProcess() = 0;
   virtual void run()
   {
@@ -710,9 +711,12 @@ public:
     : ProgressBase(auto_exchange, tf_buffer, nh)
   {
     process_ = FIND;
-    find_ = new Find(auto_exchange["auto_find"], tf_buffer, nh);
-    pre_adjust_ = new ProAdjust(auto_exchange["auto_pre_adjust"], tf_buffer, nh);
-    auto_servo_move_ = new AutoServoMove(auto_exchange["auto_servo_move"], tf_buffer, nh);
+    ros::NodeHandle nh_auto_find(nh, "auto_find");
+    ros::NodeHandle nh_auto_pre_adjust(nh, "auto_pre_adjust");
+    ros::NodeHandle nh_auto_servo_move(nh, "auto_servo_move");
+    find_ = new Find(auto_exchange["auto_find"], tf_buffer, nh_auto_find);
+    pre_adjust_ = new ProAdjust(auto_exchange["auto_pre_adjust"], tf_buffer, nh_auto_pre_adjust);
+    auto_servo_move_ = new AutoServoMove(auto_exchange["auto_servo_move"], tf_buffer, nh_auto_servo_move);
     exchanger_tf_update_pub_ = nh_.advertise<std_msgs::Bool>("/is_update_exchanger", 1);
   }
   void run() override
