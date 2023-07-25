@@ -94,14 +94,34 @@ public:
   {
     time_out_ = xmlRpcGetDouble(progress, "timeout", 1e10);
   }
-  virtual void init() = 0;
+  virtual void init()
+  {
+    is_finish_ = false;
+    is_recorded_time_ = false;
+    enter_flag_ = false;
+  }
   virtual void nextProcess() = 0;
   virtual void manageProcess() = 0;
-  virtual void run() = 0;
+  virtual void run()
+  {
+    enter_flag_ = true;
+  }
   virtual void printProcess() = 0;
-  bool checkIsFinish()
+  void recordTime()
+  {
+    if (!is_recorded_time_)
+    {
+      is_recorded_time_ = true;
+      start_time_ = ros::Time::now();
+    }
+  }
+  bool getFinishFlag()
   {
     return is_finish_;
+  }
+  bool getEnterFlag()
+  {
+    return enter_flag_;
   }
   bool checkTimeout(ros::Duration period)
   {
@@ -116,7 +136,7 @@ public:
 protected:
   tf2_ros::Buffer& tf_buffer_;
   int process_{};
-  bool is_finish_{ false }, is_recorded_time_{ false };
+  bool is_finish_{ false }, is_recorded_time_{ false }, enter_flag_{ false }, set_once_flag_{ false };
   double time_out_{};
   ros::Time start_time_{};
   ros::NodeHandle nh_{};
@@ -141,20 +161,16 @@ public:
   }
   void init() override
   {
-    is_finish_ = false;
-    is_recorded_time_ = false;
+    ProgressBase::init();
     process_ = { SWING };
     initScales();
   }
   void run() override
   {
+    ProgressBase::run();
+    ProgressBase::recordTime();
     if (!is_finish_)
     {
-      if (!is_recorded_time_)
-      {
-        is_recorded_time_ = true;
-        start_time_ = ros::Time::now();
-      }
       manageProcess();
       switch (process_)
       {
@@ -314,25 +330,11 @@ public:
     x_.init(pre_adjust["x"], "x", nh);
     y_.init(pre_adjust["y"], "y", nh);
     yaw_.init(pre_adjust["yaw"], "yaw", nh);
-    //    exchanger_tf_update_pub_ = nh_.advertise<std_msgs::Bool>("/is_update_exchanger", 1);
     ROS_INFO_STREAM("~~~~~~~~~~~~~PRE_ADJUST~~~~~~~~~~~~~~~~");
-  }
-  void init() override
-  {
-    is_finish_ = false;
-    is_recorded_time_ = false;
-    enter_pre_adjust_ = false;
-    //    // tf update
-    //    is_exchanger_tf_update_.data = true;
-    //    exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
   }
   void run() override
   {
-    // tf update
-    is_exchanger_tf_update_.data = false;
-    exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
-
-    enter_pre_adjust_ = true;
+    ProgressBase::run();
     if (!is_recorded_time_)
     {
       start_time_ = ros::Time::now();
@@ -437,15 +439,11 @@ private:
 
     tf2::doTransform(chassis_target_, chassis_target_, tf_buffer_.lookupTransform("base_link", "map", ros::Time(0)));
   }
-  bool enter_pre_adjust_{ false };
   ros::Time last_time_;
   std::string chassis_command_source_frame_{ "base_link" };
   geometry_msgs::Twist chassis_vel_cmd_{};
   geometry_msgs::PoseStamped chassis_target_{}, chassis_original_target_{};
   ChassisSingleDirectionMove x_, y_, yaw_;
-  // tf update
-  std_msgs::Bool is_exchanger_tf_update_{};
-  ros::Publisher exchanger_tf_update_pub_;
 };
 
 class AutoServoMove : public ProgressBase
@@ -459,7 +457,6 @@ public:
     ROS_ASSERT(auto_servo_move["link7_length"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
 
     process_ = { YZ };
-    enter_auto_servo_move_.data = false;
     xyz_offset_.resize(3, 0.);
     servo_pid_value_.resize(6, 0.);
     servo_errors_.resize(6, 0.);
@@ -489,21 +486,15 @@ public:
     {
       servo_error_tolerance_[i] = auto_servo_move["servo_error_tolerance"][i];
     }
-    exchanger_tf_update_pub_ = nh_.advertise<std_msgs::Bool>("/is_update_exchanger", 1);
     ROS_INFO_STREAM("~~~~~~~~~~~~~SERVO_MOVE~~~~~~~~~~~~~~~~");
   }
   ~AutoServoMove() = default;
   void init() override
   {
-    is_finish_ = false;
-    is_recorded_time_ = false;
+    ProgressBase::init();
     process_ = { YZ };
-    enter_auto_servo_move_.data = false;
     initComputerValue();
     joint7_msg_ = 0.;
-    // tf update
-    is_exchanger_tf_update_.data = true;
-    exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
   }
   void printProcess() override
   {
@@ -528,17 +519,10 @@ public:
   }
   void run() override
   {
-    is_exchanger_tf_update_.data = false;
-    exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
-    enter_auto_servo_move_.data = true;
+    ProgressBase::run();
     if (!is_finish_)
     {
-      is_enter_auto_ = true;
-      if (!is_recorded_time_)
-      {
-        start_time_ = ros::Time::now();
-        is_recorded_time_ = true;
-      }
+      ProgressBase::recordTime();
       computeServoMoveScale();
       manageProcess();
     }
@@ -546,14 +530,6 @@ public:
   double getJoint7Msg()
   {
     return joint7_msg_;
-  }
-  bool getEnterAutoServoFlag()
-  {
-    return enter_auto_servo_move_.data;
-  }
-  bool getFinishFlag()
-  {
-    return is_finish_;
   }
   std::vector<double> getServoScale()
   {
@@ -608,15 +584,11 @@ private:
 
     servo_pid_value_[0] = pid_x_.computeCommand(servo_errors_[0], dt);
     if (process_ != REY)
-    {
       servo_pid_value_[1] = pid_y_.computeCommand(servo_errors_[1], dt);
-    }
     else
       servo_pid_value_[1] = pid_re_y_.computeCommand(servo_errors_[1], dt);
     if (process_ != REZ)
-    {
       servo_pid_value_[2] = pid_z_.computeCommand(servo_errors_[2], dt);
-    }
     else
       servo_pid_value_[2] = pid_re_z_.computeCommand(servo_errors_[2], dt);
     servo_pid_value_[3] = pid_roll_.computeCommand(servo_errors_[3], dt);
@@ -714,10 +686,7 @@ private:
   }
 
   ros::Time last_time_;
-  std_msgs::Bool enter_auto_servo_move_{}, is_exchanger_tf_update_{};
-  bool is_enter_auto_{};
   double link7_length_{}, joint7_msg_{}, rectify_x_, rectify_z_;
-  ros::Publisher exchanger_tf_update_pub_;
   control_toolbox::Pid pid_x_, pid_y_, pid_re_y_, pid_re_z_, pid_z_, pid_roll_, pid_pitch_, pid_yaw_;
   std::vector<double> xyz_offset_{}, servo_errors_{}, servo_scales_{}, servo_error_tolerance_{}, servo_pid_value_{};
 };
@@ -741,13 +710,14 @@ public:
     : ProgressBase(auto_exchange, tf_buffer, nh)
   {
     process_ = FIND;
-    find_ = new Find(auto_exchange["find"], tf_buffer, nh);
-    pre_adjust_ = new ProAdjust(auto_exchange["pre_adjust"], tf_buffer, nh);
+    find_ = new Find(auto_exchange["auto_find"], tf_buffer, nh);
+    pre_adjust_ = new ProAdjust(auto_exchange["auto_pre_adjust"], tf_buffer, nh);
     auto_servo_move_ = new AutoServoMove(auto_exchange["auto_servo_move"], tf_buffer, nh);
     exchanger_tf_update_pub_ = nh_.advertise<std_msgs::Bool>("/is_update_exchanger", 1);
   }
   void run() override
   {
+    ProgressBase::run();
     if (!is_recorded_time_)
     {
       is_recorded_time_ = true;
@@ -757,42 +727,33 @@ public:
       exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
     }
     if (!is_finish_)
-      manageProcess();
-    else if (checkIsFinish())
     {
-      is_finish_ = true;
-      ROS_INFO_STREAM("TIME OUT");
+      manageProcess();
+      if (checkTimeout(ros::Time::now() - start_time_))
+      {
+        is_finish_ = true;
+        ROS_INFO_STREAM("TIME OUT");
+      }
     }
   }
   void init() override
   {
+    ProgressBase::init();
     find_->init();
     pre_adjust_->init();
     auto_servo_move_->init();
-    is_recorded_time_ = false;
-    is_finish_ = false;
+    process_ = FIND;
     // tf update
     is_exchanger_tf_update_.data = true;
     exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
   }
-  void nextProcess() override
-  {
-    if (find_->checkIsFinish())
-    {
-      process_ = PRE_ADJUST;
-      find_->init();
-    }
-    else if (pre_adjust_->checkIsFinish())
-    {
-      process_ = MOVE;
-      pre_adjust_->init();
-    }
-    else if (auto_servo_move_->checkIsFinish())
-    {
-      process_ = FINISH;
-      auto_servo_move_->init();
-    }
-  }
+
+public:
+  Find* find_{};
+  ProAdjust* pre_adjust_{};
+  AutoServoMove* auto_servo_move_{};
+
+private:
   void manageProcess() override
   {
     switch (process_)
@@ -810,7 +771,33 @@ public:
     nextProcess();
   }
 
-private:
+  void nextProcess() override
+  {
+    switch (process_)
+    {
+      case FIND:
+        if (find_->getFinishFlag())
+        {
+          process_ = PRE_ADJUST;
+          find_->init();
+        }
+        break;
+      case PRE_ADJUST:
+        if (pre_adjust_->getFinishFlag())
+        {
+          process_ = MOVE;
+          pre_adjust_->init();
+        }
+        break;
+      case MOVE:
+        if (auto_servo_move_->getFinishFlag())
+        {
+          is_finish_ = true;
+          auto_servo_move_->init();
+        }
+        break;
+    }
+  }
   void printProcess() override
   {
     if (process_ == FIND)
@@ -822,9 +809,6 @@ private:
     else if (process_ == FINISH)
       ROS_INFO_STREAM("FINISH");
   }
-  Find* find_{};
-  ProAdjust* pre_adjust_{};
-  AutoServoMove* auto_servo_move_{};
   // tf update
   std_msgs::Bool is_exchanger_tf_update_{};
   ros::Publisher exchanger_tf_update_pub_;
