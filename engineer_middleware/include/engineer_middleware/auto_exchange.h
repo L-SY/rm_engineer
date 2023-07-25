@@ -315,6 +315,7 @@ public:
     x_.init(pre_adjust["x"], "x", nh);
     y_.init(pre_adjust["y"], "y", nh);
     yaw_.init(pre_adjust["yaw"], "yaw", nh);
+    exchanger_tf_update_pub_ = nh_.advertise<std_msgs::Bool>("/is_update_exchanger", 1);
     ROS_INFO_STREAM("~~~~~~~~~~~~~PRE_ADJUST~~~~~~~~~~~~~~~~");
   }
   void init() override
@@ -322,9 +323,16 @@ public:
     is_finish_ = false;
     is_recorded_time_ = false;
     enter_pre_adjust_ = false;
+    // tf update
+    is_exchanger_tf_update_.data = true;
+    exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
   }
   void run() override
   {
+    // tf update
+    is_exchanger_tf_update_.data = false;
+    exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
+
     enter_pre_adjust_ = true;
     if (!is_recorded_time_)
     {
@@ -335,15 +343,17 @@ public:
     if (!is_finish_)
     {
       computerChassisVel();
-    }
-    else if (checkTimeout(ros::Time::now() - start_time_))
-    {
-      is_finish_ = true;
-    }
-    else if (isChassisFinish())
-    {
-      is_finish_ = true;
-      ROS_INFO_STREAM("CHASSIS ARRIVED");
+      if (checkTimeout(ros::Time::now() - start_time_))
+      {
+        is_finish_ = true;
+        initComputerValue();
+      }
+      else if (isChassisFinish())
+      {
+        is_finish_ = true;
+        initComputerValue();
+        ROS_INFO_STREAM("CHASSIS ARRIVED");
+      }
     }
   }
   geometry_msgs::Twist getChassisVelMsg()
@@ -430,6 +440,8 @@ private:
   }
   bool enter_pre_adjust_{ false };
   ros::Time last_time_;
+  std_msgs::Bool is_exchanger_tf_update_{};
+  ros::Publisher exchanger_tf_update_pub_;
   std::string chassis_command_source_frame_{ "base_link" };
   geometry_msgs::Twist chassis_vel_cmd_{};
   geometry_msgs::PoseStamped chassis_target_{}, chassis_original_target_{};
@@ -487,9 +499,10 @@ public:
     is_recorded_time_ = false;
     process_ = { YZ };
     enter_auto_servo_move_.data = false;
-    is_exchanger_tf_update_.data = true;
     initComputerValue();
     joint7_msg_ = 0.;
+    // tf update
+    is_exchanger_tf_update_.data = true;
     exchanger_tf_update_pub_.publish(is_exchanger_tf_update_);
   }
   void printProcess() override
