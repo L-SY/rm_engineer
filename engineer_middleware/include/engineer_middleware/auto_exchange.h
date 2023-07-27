@@ -30,7 +30,7 @@ enum ServoMoveProcess
   YZ,
   YAW,
   ROLL,
-  Y,
+  //  Y,
   PITCH,
   REY,
   REZ,
@@ -506,8 +506,8 @@ public:
       ROS_INFO_STREAM("YAW");
     else if (process_ == ROLL)
       ROS_INFO_STREAM("ROLL");
-    else if (process_ == Y)
-      ROS_INFO_STREAM("Y");
+    //    else if (process_ == Y)
+    //      ROS_INFO_STREAM("Y");
     else if (process_ == PITCH)
       ROS_INFO_STREAM("PITCH");
     else if (process_ == REY)
@@ -618,11 +618,11 @@ private:
         servo_scales_[3] = servo_pid_value_[3];
       }
       break;
-      case Y:
-      {
-        servo_scales_[1] = servo_pid_value_[1];
-      }
-      break;
+        //      case Y:
+        //      {
+        //        servo_scales_[1] = servo_pid_value_[1];
+        //      }
+        //      break;
       case PITCH:
       {
         joint7_msg_ = servo_errors_[4];
