@@ -58,6 +58,10 @@ public:
     : tf_buffer_(tf_buffer), nh_(nh)
   {
     time_out_ = xmlRpcGetDouble(progress, "timeout", 1e10);
+    for (int i = 0; i < (int)progress["inside_time_out"].size(); ++i)
+    {
+      inside_time_out_.push_back(progress["inside_time_out"][i]);
+    }
   }
   virtual void init()
   {
@@ -73,18 +77,13 @@ public:
     if (!is_finish_)
     {
       stateMachine();
-      if (checkTimeout(ros::Time::now() - start_time_))
-        is_finish_ = true;
+      checkTimeout();
+      checkInsideTimeout();
     }
   }
   virtual void printProcess() = 0;
   void recordStartTime()
   {
-    if (!is_recorded_time_)
-    {
-      is_recorded_time_ = true;
-      start_time_ = ros::Time::now();
-    }
   }
   bool getFinishFlag()
   {
@@ -94,22 +93,46 @@ public:
   {
     return enter_flag_;
   }
-  bool checkTimeout(ros::Duration period)
+  void checkTimeout()
   {
-    if (period.toSec() > time_out_)
+    if (!is_recorded_time_)
     {
-      ROS_ERROR("Progress timeout,it should be finish in %f seconds", time_out_);
-      return true;
+      is_recorded_time_ = true;
+      start_time_ = ros::Time::now();
     }
-    return false;
+    if ((ros::Time::now() - start_time_).toSec() > time_out_)
+    {
+      ROS_ERROR("Progress timeout, should be finish in %f seconds", time_out_);
+      is_recorded_time_ = false;
+      is_finish_ = true;
+    }
+  }
+  void checkInsideTimeout()
+  {
+    if (!is_recorded_inside_time_ || last_process_ != process_)
+    {
+      is_recorded_inside_time_ = true;
+      inside_start_time_ = ros::Time::now();
+      last_process_ = process_;
+    }
+    if ((ros::Time::now() - inside_start_time_).toSec() > inside_time_out_[process_])
+    {
+      ROS_ERROR("Inside progress timeout, should be finish in %f seconds", inside_time_out_[process_]);
+      is_recorded_inside_time_ = false;
+      if (process_ != (process_num_ - 1))
+        process_++;
+      else
+        is_finish_ = true;
+    }
   }
 
 protected:
   tf2_ros::Buffer& tf_buffer_;
-  int process_{};
-  bool is_finish_{ false }, is_recorded_time_{ false }, enter_flag_{ false };
+  int process_{}, last_process_{}, process_num_{};
+  bool is_finish_{ false }, is_recorded_time_{ false }, enter_flag_{ false }, is_recorded_inside_time_{ false };
   double time_out_{};
-  ros::Time start_time_{};
+  std::vector<double> inside_time_out_{};
+  ros::Time start_time_{}, inside_start_time_{};
   ros::NodeHandle nh_{};
 };
 
@@ -120,11 +143,13 @@ public:
   {
     SWING,
     FOUND,
-    LOCKED
+    FINISH
   };
   Find(XmlRpc::XmlRpcValue& find, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh) : ProgressBase(find, tf_buffer, nh)
   {
     process_ = SWING;
+    last_process_ = process_;
+    process_num_ = 3;
     gimbal_scale_.resize(2, 0);
     chassis_scale_.resize(2, 0);
     search_range_ = xmlRpcGetDouble(find, "search_range", 0.3);
@@ -166,6 +191,7 @@ private:
       }
       break;
       case FOUND:
+      {
         if (is_found_)
         {
           static int lock_time = 0;
@@ -180,15 +206,16 @@ private:
           }
           else
           {
-            process_ = LOCKED;
+            process_ = FINISH;
           }
         }
         else
         {
           process_ = SWING;
         }
-        break;
-      case LOCKED:
+      }
+      break;
+      case FINISH:
       {
         is_finish_ = true;
         ROS_INFO_STREAM("LOCKED");
@@ -227,8 +254,8 @@ private:
       ROS_INFO_STREAM("SWING");
     else if (process_ == FOUND)
       ROS_INFO_STREAM("FOUND");
-    else if (process_ == LOCKED)
-      ROS_INFO_STREAM("LOCKED");
+    else if (process_ == FINISH)
+      ROS_INFO_STREAM("FINISH");
   }
   void initScales()
   {
@@ -258,7 +285,7 @@ public:
     CHASSIS_Y,
     CHASSIS_X,
     CHASSIS_YAW,
-    CHASSIS_FINISH
+    FINISH
   };
   struct ChassisSingleDirectionMove
   {
@@ -290,6 +317,9 @@ public:
   ProAdjust(XmlRpc::XmlRpcValue& pre_adjust, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh)
     : ProgressBase(pre_adjust, tf_buffer, nh)
   {
+    process_ = SET_GOAL;
+    last_process_ = process_;
+    process_num_ = 4;
     x_.init(pre_adjust["x"], "x", nh);
     y_.init(pre_adjust["y"], "y", nh);
     yaw_.init(pre_adjust["yaw"], "yaw", nh);
@@ -331,11 +361,11 @@ public:
         chassis_vel_cmd_.linear.y = 0.;
         if (yaw_.isFinish())
         {
-          process_ = CHASSIS_FINISH;
+          process_ = FINISH;
         }
       }
       break;
-      case CHASSIS_FINISH:
+      case FINISH:
       {
         is_finish_ = true;
         initComputerValue();
@@ -422,12 +452,11 @@ public:
     YZ,
     YAW,
     ROLL,
-    //  Y,
     PITCH,
     REY,
     REZ,
     PUSH,
-    DONE
+    FINISH
   };
   AutoServoMove(XmlRpc::XmlRpcValue& auto_servo_move, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh)
     : ProgressBase(auto_servo_move, tf_buffer, nh), joint7_msg_(0.)
@@ -436,7 +465,10 @@ public:
     ROS_ASSERT(auto_servo_move["servo_error_tolerance"].getType() == XmlRpc::XmlRpcValue::TypeArray);
     ROS_ASSERT(auto_servo_move["link7_length"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
 
-    process_ = { YZ };
+    process_ = YZ;
+    last_process_ = process_;
+    process_num_ = 8;
+
     xyz_offset_.resize(3, 0.);
     servo_pid_value_.resize(6, 0.);
     servo_errors_.resize(6, 0.);
@@ -502,8 +534,8 @@ private:
       ROS_INFO_STREAM("REZ");
     else if (process_ == PUSH)
       ROS_INFO_STREAM("PUSH");
-    else if (process_ == DONE)
-      ROS_INFO_STREAM("DOWN");
+    else if (process_ == FINISH)
+      ROS_INFO_STREAM("FINISH");
   }
   void stateMachine() override
   {
@@ -515,8 +547,8 @@ private:
     for (int i = 0; i < (int)servo_scales_.size(); ++i)
     {
       servo_errors_[i] = 0;
-      servo_pid_value_[i] = 0;
       servo_scales_[i] = 0;
+      servo_pid_value_[i] = 0;
     }
   }
   void computeServoMoveError()
@@ -621,17 +653,9 @@ private:
         }
       }
     }
-    if (checkTimeout(ros::Time::now() - start_time_))
+    if (arrived_joint_num == move_joint_num)
     {
-      if (process_ != DONE)
-        process_++;
-      else
-        is_finish_ = true;
-      ROS_INFO_STREAM("TIME OUT");
-    }
-    else if (arrived_joint_num == move_joint_num)
-    {
-      if (process_ != DONE)
+      if (process_ != FINISH)
         process_++;
       else
         is_finish_ = true;
@@ -669,13 +693,14 @@ public:
     FIND,
     PRE_ADJUST,
     MOVE,
-    POST_ADJUST,
     FINISH
   };
   AutoExchange(XmlRpc::XmlRpcValue& auto_exchange, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh)
     : ProgressBase(auto_exchange, tf_buffer, nh)
   {
     process_ = FIND;
+    last_process_ = process_;
+    process_num_ = 4;
     ros::NodeHandle nh_auto_find(nh, "auto_find");
     ros::NodeHandle nh_auto_pre_adjust(nh, "auto_pre_adjust");
     ros::NodeHandle nh_auto_servo_move(nh, "auto_servo_move");
