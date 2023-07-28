@@ -12,50 +12,12 @@
 
 namespace auto_exchange
 {
-enum FindProcess
-{
-  SWING,
-  FOUND,
-  LOCKED
-};
-
-enum AdjustProcess
-{
-  SET_GOAL,
-  CHASSIS_Y,
-  CHASSIS_X,
-  CHASSIS_YAW,
-  CHASSIS_FINISH
-};
-
-enum ServoMoveProcess
-{
-  YZ,
-  YAW,
-  ROLL,
-  //  Y,
-  PITCH,
-  REY,
-  REZ,
-  PUSH,
-  DONE
-};
-
 enum MotionMoveProcess
 {
   SPHERE,
   LINE,
   POINT,
   ACHIEVE
-};
-
-enum ExchangeProcess
-{
-  FIND,
-  PRE_ADJUST,
-  MOVE,
-  POST_ADJUST,
-  FINISH
 };
 
 class JointInfo
@@ -154,6 +116,12 @@ protected:
 class Find : public ProgressBase
 {
 public:
+  enum FindProcess
+  {
+    SWING,
+    FOUND,
+    LOCKED
+  };
   Find(XmlRpc::XmlRpcValue& find, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh) : ProgressBase(find, tf_buffer, nh)
   {
     process_ = SWING;
@@ -217,7 +185,7 @@ private:
         }
         else
         {
-          process_ = FIND;
+          process_ = SWING;
         }
         break;
       case LOCKED:
@@ -284,6 +252,14 @@ private:
 class ProAdjust : public ProgressBase
 {
 public:
+  enum AdjustProcess
+  {
+    SET_GOAL,
+    CHASSIS_Y,
+    CHASSIS_X,
+    CHASSIS_YAW,
+    CHASSIS_FINISH
+  };
   struct ChassisSingleDirectionMove
   {
     std::string name;
@@ -441,6 +417,18 @@ private:
 class AutoServoMove : public ProgressBase
 {
 public:
+  enum ServoMoveProcess
+  {
+    YZ,
+    YAW,
+    ROLL,
+    //  Y,
+    PITCH,
+    REY,
+    REZ,
+    PUSH,
+    DONE
+  };
   AutoServoMove(XmlRpc::XmlRpcValue& auto_servo_move, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh)
     : ProgressBase(auto_servo_move, tf_buffer, nh), joint7_msg_(0.)
   {
@@ -676,6 +664,14 @@ private:
 class AutoExchange : public ProgressBase
 {
 public:
+  enum ExchangeProcess
+  {
+    FIND,
+    PRE_ADJUST,
+    MOVE,
+    POST_ADJUST,
+    FINISH
+  };
   AutoExchange(XmlRpc::XmlRpcValue& auto_exchange, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh)
     : ProgressBase(auto_exchange, tf_buffer, nh)
   {
