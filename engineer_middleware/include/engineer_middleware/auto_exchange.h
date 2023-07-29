@@ -57,10 +57,13 @@ public:
   ProgressBase(XmlRpc::XmlRpcValue& progress, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh)
     : tf_buffer_(tf_buffer), nh_(nh)
   {
-    time_out_ = xmlRpcGetDouble(progress, "timeout", 1e10);
-    for (int i = 0; i < (int)progress["inside_time_out"].size(); ++i)
+    time_out_ = xmlRpcGetDouble(progress, "time_out", 1e10);
+    if (nh_.hasParam("internal_time_out"))
     {
-      inside_time_out_.push_back(progress["inside_time_out"][i]);
+      for (int i = 0; i < (int)progress["internal_time_out"].size(); ++i)
+      {
+        internal_time_out_.push_back(progress["internal_time_out"][i]);
+      }
     }
   }
   virtual void init()
@@ -109,16 +112,16 @@ public:
   }
   void checkInsideTimeout()
   {
-    if (!is_recorded_inside_time_ || last_process_ != process_)
+    if (!is_recorded_internal_time_ || last_process_ != process_)
     {
-      is_recorded_inside_time_ = true;
-      inside_start_time_ = ros::Time::now();
+      is_recorded_internal_time_ = true;
+      internal_start_time_ = ros::Time::now();
       last_process_ = process_;
     }
-    if ((ros::Time::now() - inside_start_time_).toSec() > inside_time_out_[process_])
+    if ((ros::Time::now() - internal_start_time_).toSec() > internal_time_out_[process_])
     {
-      ROS_ERROR("Inside progress timeout, should be finish in %f seconds", inside_time_out_[process_]);
-      is_recorded_inside_time_ = false;
+      ROS_ERROR("Inside progress timeout, should be finish in %f seconds", internal_time_out_[process_]);
+      is_recorded_internal_time_ = false;
       if (process_ != (process_num_ - 1))
         process_++;
       else
@@ -129,10 +132,10 @@ public:
 protected:
   tf2_ros::Buffer& tf_buffer_;
   int process_{}, last_process_{}, process_num_{};
-  bool is_finish_{ false }, is_recorded_time_{ false }, enter_flag_{ false }, is_recorded_inside_time_{ false };
+  bool is_finish_{ false }, is_recorded_time_{ false }, enter_flag_{ false }, is_recorded_internal_time_{ false };
   double time_out_{};
-  std::vector<double> inside_time_out_{};
-  ros::Time start_time_{}, inside_start_time_{};
+  std::vector<double> internal_time_out_{};
+  ros::Time start_time_{}, internal_start_time_{};
   ros::NodeHandle nh_{};
 };
 
