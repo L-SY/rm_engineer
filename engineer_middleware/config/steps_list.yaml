@@ -98,6 +98,8 @@ common:
                             0.1
       rt_avoid_other_ore: &JOINT3_RT_AVOID_ORE
                             -0.2
+      sky_store_position: &JOINT3_SKY_STORE_POSITION
+                            0.218
 
     store_and_take:
       store_stone_position: &JOINT3_STORE_STONE_POSITION
@@ -234,7 +236,7 @@ common:
       catch_drop: &CATCH_DROP
         joints: [ *JOINT1_UP_POSITION, *JOINT2_FURTHEST_POSITION, *JOINT3_MID_GET_ORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_UP_POSITION ]
         common:
-          <<: *NORMALLY
+          <<: *QUICKLY
         tolerance:
           <<: *SMALL_TOLERANCE
 
@@ -260,12 +262,27 @@ common:
       tolerance:
         <<: *NORMAL_TOLERANCE
 
+    ready_to_store_stone_after_catch_drop: &READY_TO_STORE_STONE_AFTER_CATCH_DROP
+      joints: [ *JOINT1_STORE_ORE_POSITION, *JOINT2_ACCESS_STORE_POSITION, *JOINT3_SKY_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_RT_POSITION, *JOINT6_UP_POSITION ]
+      common:
+        <<: *NORMALLY
+      tolerance:
+        <<: *NORMAL_TOLERANCE
+
     store_stone_after_get_ore: &STORE_STONE_AFTER_GET_ORE
       joints: [ *JOINT1_STORE_ORE_POSITION, *JOINT2_ACCESS_STORE_POSITION, *JOINT3_STORE_STONE_POSITION, *JOINT4_UP_POSITION, *JOINT5_RT_POSITION, *JOINT6_ACCESS_STONE_POSITION ]
       common:
         <<: *NORMALLY_HIGH_TIMEOUT
       tolerance:
         <<: *MAX_TOLERANCE
+
+    store_stone_after_catch_drop: &STORE_STONE_AFTER_CATCH_DROP
+      joints: [ *JOINT1_STORE_ORE_POSITION, *JOINT2_ACCESS_STORE_POSITION, *JOINT3_SKY_STORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_RT_POSITION, *JOINT6_ACCESS_STONE_POSITION ]
+      common:
+        <<: *SLOWLY
+      tolerance:
+        <<: *MAX_TOLERANCE
+
 
     exchange_position: &EXCHANGE_POSITION
       joints: [ *JOINT1_EXCHANGE_POSITION, *JOINT2_EXCHANGE_POSITION, *JOINT3_LF_POSITION, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_UP_POSITION ]
@@ -963,13 +980,13 @@ steps_list:
   CATCH_DROP0:
     - step: "ready to store stone"
       arm:
-        <<: *READY_TO_STORE_STONE_AFTER_GET_ORE
+        <<: *READY_TO_STORE_STONE_AFTER_CATCH_DROP
     - step: "reversal move"
       reversal:
         <<: *VELOCITY_Z_IN_QUICKLY_WITH_DELAY
     - step: "store stone"
       arm:
-        <<: *STORE_STONE_AFTER_GET_ORE
+        <<: *STORE_STONE_AFTER_CATCH_DROP
     - step: "close gripper"
       gripper:
         <<: *CLOSE_GRIPPER

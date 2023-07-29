@@ -68,26 +68,23 @@ public:
   }
   virtual void init()
   {
+    enter_flag_ = false;
     is_finish_ = false;
     is_recorded_time_ = false;
-    enter_flag_ = false;
+    is_recorded_internal_time_ = false;
   }
   virtual void stateMachine() = 0;
   virtual void run()
   {
     enter_flag_ = true;
-    recordStartTime();
     if (!is_finish_)
     {
-      stateMachine();
       checkTimeout();
       checkInsideTimeout();
+      stateMachine();
     }
   }
   virtual void printProcess() = 0;
-  void recordStartTime()
-  {
-  }
   bool getFinishFlag()
   {
     return is_finish_;
