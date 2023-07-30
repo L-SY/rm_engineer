@@ -60,10 +60,9 @@ public:
     time_out_ = xmlRpcGetDouble(progress, "time_out", 1e10);
     if (nh_.hasParam("internal_time_out"))
     {
+      internal_time_out_.resize((int)progress["internal_time_out"].size(), 1.);
       for (int i = 0; i < (int)progress["internal_time_out"].size(); ++i)
-      {
-        internal_time_out_.push_back(progress["internal_time_out"][i]);
-      }
+        internal_time_out_[i] = (progress["internal_time_out"][i]);
     }
   }
   virtual void init()
@@ -80,7 +79,10 @@ public:
     if (!is_finish_)
     {
       checkTimeout();
-      checkInsideTimeout();
+      if (nh_.hasParam("internal_time_out"))
+      {
+        checkInternalTimeout();
+      }
       stateMachine();
     }
   }
@@ -107,7 +109,7 @@ public:
       is_finish_ = true;
     }
   }
-  void checkInsideTimeout()
+  void checkInternalTimeout()
   {
     if (!is_recorded_internal_time_ || last_process_ != process_)
     {
@@ -118,8 +120,9 @@ public:
     if ((ros::Time::now() - internal_start_time_).toSec() > internal_time_out_[process_])
     {
       ROS_ERROR("Inside progress timeout, should be finish in %f seconds", internal_time_out_[process_]);
+      //      ROS_INFO_STREAM("dt:  " <<  (ros::Time::now() - internal_start_time_).toSec());
       is_recorded_internal_time_ = false;
-      if (process_ != (process_num_ - 1))
+      if (process_ < (process_num_ - 1))
         process_++;
       else
         is_finish_ = true;
@@ -160,11 +163,13 @@ public:
     confirm_lock_time_ = xmlRpcGetDouble(find, "confirm_lock_time", 10);
     visual_recognition_sub_ =
         nh_.subscribe<rm_msgs::ExchangerMsg>("/pnp_publisher", 1, &Find::visualRecognitionCallback, this);
+    ROS_INFO_STREAM("~~~~~~~~~~~~~FIND~~~~~~~~~~~~~~~~");
   }
   void init() override
   {
     ProgressBase::init();
     process_ = { SWING };
+    lock_time_ = 0;
     initScales();
   }
   std::vector<double> getGimbalScale()
@@ -186,7 +191,8 @@ private:
         autoSearch(false, true);
         if (is_found_)
         {
-          process_ = SWING;
+          lock_time_ = 0;
+          process_ = FOUND;
         }
       }
       break;
@@ -194,25 +200,15 @@ private:
       {
         if (is_found_)
         {
-          static int lock_time = 0;
-          for (int i = 0; i < (int)gimbal_scale_.size(); ++i)
-          {
-            gimbal_scale_[i] /= confirm_lock_time_;
-          }
-          if (lock_time <= confirm_lock_time_)
-          {
-            process_ = FOUND;
-            lock_time++;
-          }
+          gimbal_scale_[0] /= 10;
+          gimbal_scale_[1] /= 10;
+          if (lock_time_ <= confirm_lock_time_)
+            lock_time_++;
           else
-          {
             process_ = FINISH;
-          }
         }
         else
-        {
           process_ = SWING;
-        }
       }
       break;
       case FINISH:
@@ -269,6 +265,7 @@ private:
   {
     is_found_ = msg->flag;
   }
+  int lock_time_{ 0 };
   JointInfo *yaw_{}, *pitch_{};
   bool is_found_{ false };
   std::vector<double> gimbal_scale_{}, chassis_scale_{};
@@ -325,22 +322,19 @@ public:
     yaw_.init(pre_adjust["yaw"], "yaw", nh);
     ROS_INFO_STREAM("~~~~~~~~~~~~~PRE_ADJUST~~~~~~~~~~~~~~~~");
   }
+  void init() override
+  {
+    ProgressBase::init();
+    process_ = SET_GOAL;
+  }
   void stateMachine() override
   {
     switch (process_)
     {
       case SET_GOAL:
-        set_goal();
-        break;
-      case CHASSIS_X:
       {
-        computerChassisVel();
-        chassis_vel_cmd_.linear.y = 0.;
-        chassis_vel_cmd_.angular.z = 0.;
-        if (x_.isFinish())
-        {
-          process_ = CHASSIS_Y;
-        }
+        set_goal();
+        process_ = CHASSIS_Y;
       }
       break;
       case CHASSIS_Y:
@@ -349,9 +343,16 @@ public:
         chassis_vel_cmd_.linear.x = 0.;
         chassis_vel_cmd_.angular.z = 0.;
         if (y_.isFinish())
-        {
+          process_ = CHASSIS_X;
+      }
+      break;
+      case CHASSIS_X:
+      {
+        computerChassisVel();
+        chassis_vel_cmd_.linear.y = 0.;
+        chassis_vel_cmd_.angular.z = 0.;
+        if (x_.isFinish())
           process_ = CHASSIS_YAW;
-        }
       }
       break;
       case CHASSIS_YAW:
@@ -400,10 +401,12 @@ private:
   void computerChassisVel()
   {
     geometry_msgs::TransformStamped current;
-    current = tf_buffer_.lookupTransform("base_link", "map", ros::Time(0));
+    current = tf_buffer_.lookupTransform("map", "base_link", ros::Time(0));
     x_.error = chassis_target_.pose.position.x - current.transform.translation.x;
     y_.error = chassis_target_.pose.position.y - current.transform.translation.y;
-
+    //    ROS_INFO_STREAM("target:    "<<  chassis_target_.pose.position.y);
+    //    ROS_INFO_STREAM("current:    "<<  current.transform.translation.y);
+    //    ROS_INFO_STREAM("Y ERROR:    "<<  y_.error);
     double roll, pitch, yaw_current, yaw_goal;
     quatToRPY(current.transform.rotation, roll, pitch, yaw_current);
     quatToRPY(chassis_target_.pose.orientation, roll, pitch, yaw_goal);
@@ -433,8 +436,7 @@ private:
     geometry_msgs::Quaternion quat_msg = tf2::toMsg(quat_tf);
     chassis_original_target_.pose.orientation = quat_msg;
     chassis_target_ = chassis_original_target_;
-    tf2::doTransform(chassis_target_, chassis_target_, tf_buffer_.lookupTransform("base_link", "map", ros::Time(0)));
-    process_ = CHASSIS_Y;
+    tf2::doTransform(chassis_target_, chassis_target_, tf_buffer_.lookupTransform("map", "base_link", ros::Time(0)));
   }
 
   ros::Time last_time_;
@@ -517,7 +519,6 @@ public:
     return servo_scales_;
   }
 
-private:
   void printProcess() override
   {
     if (process_ == YZ)
@@ -537,6 +538,8 @@ private:
     else if (process_ == FINISH)
       ROS_INFO_STREAM("FINISH");
   }
+
+private:
   void stateMachine() override
   {
     computeServoMoveScale();
@@ -760,6 +763,7 @@ private:
       {
         exchangerTfUpdate(false);
         auto_servo_move_->run();
+        auto_servo_move_->printProcess();
         if (auto_servo_move_->getFinishFlag())
         {
           is_finish_ = true;
