@@ -306,7 +306,7 @@ public:
     }
     double computerVel(ros::Duration dt)
     {
-      double vel = (start_vel + pid.computeCommand(error, dt));
+      double vel = start_vel + abs(pid.computeCommand(error, dt));
       int direction = error / abs(error);
       return abs(vel) >= max_vel ? direction * max_vel : direction * vel;
     }
@@ -404,9 +404,9 @@ private:
     current = tf_buffer_.lookupTransform("map", "base_link", ros::Time(0));
     x_.error = chassis_target_.pose.position.x - current.transform.translation.x;
     y_.error = chassis_target_.pose.position.y - current.transform.translation.y;
-    //    ROS_INFO_STREAM("target:    "<<  chassis_target_.pose.position.y);
-    //    ROS_INFO_STREAM("current:    "<<  current.transform.translation.y);
-    //    ROS_INFO_STREAM("Y ERROR:    "<<  y_.error);
+    //        ROS_INFO_STREAM("target:    "<<  chassis_target_.pose.position.y);
+    //        ROS_INFO_STREAM("current:    "<<  current.transform.translation.y);
+    //        ROS_INFO_STREAM("Y ERROR:    "<<  y_.error);
     double roll, pitch, yaw_current, yaw_goal;
     quatToRPY(current.transform.rotation, roll, pitch, yaw_current);
     quatToRPY(chassis_target_.pose.orientation, roll, pitch, yaw_goal);
@@ -415,6 +415,7 @@ private:
     ros::Duration dt = ros::Time::now() - last_time_;
     chassis_vel_cmd_.linear.x = x_.computerVel(dt);
     chassis_vel_cmd_.linear.y = y_.computerVel(dt);
+    //      ROS_INFO_STREAM("Y ERROR AFTER:    "<<  chassis_vel_cmd_.linear.y);
     chassis_vel_cmd_.angular.z = yaw_.computerVel(dt);
 
     last_time_ = ros::Time::now();
@@ -750,7 +751,7 @@ private:
       break;
       case PRE_ADJUST:
       {
-        exchangerTfUpdate(false);
+        exchangerTfUpdate(true);
         pre_adjust_->run();
         if (pre_adjust_->getFinishFlag())
         {
