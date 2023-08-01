@@ -10,7 +10,7 @@ Panels:
         - /TF1
         - /TF1/Frames1
       Splitter Ratio: 0.5
-    Tree Height: 357
+    Tree Height: 781
   - Class: rviz/Help
     Name: Help
   - Class: rviz/Views
@@ -136,6 +136,14 @@ Visualization Manager:
           Value: false
         camera_optical_frame:
           Value: true
+        close_lb:
+          Value: false
+        close_lt:
+          Value: false
+        close_rb:
+          Value: false
+        close_rt:
+          Value: false
         drag_link:
           Value: false
         exchanger:
@@ -143,6 +151,8 @@ Visualization Manager:
         fake_link5:
           Value: false
         gimbal_base:
+          Value: false
+        lb:
           Value: false
         left_back_wheel:
           Value: false
@@ -162,6 +172,8 @@ Visualization Manager:
           Value: false
         link7:
           Value: false
+        lt:
+          Value: false
         map:
           Value: true
         mimic_drag_link:
@@ -174,6 +186,8 @@ Visualization Manager:
           Value: false
         pitch_front_link:
           Value: false
+        rb:
+          Value: false
         real_world:
           Value: true
         right_back_wheel:
@@ -183,6 +197,8 @@ Visualization Manager:
         roll_left_link:
           Value: false
         roll_right_link:
+          Value: false
+        rt:
           Value: false
         tools_link:
           Value: true
@@ -200,7 +216,17 @@ Visualization Manager:
             {}
           odom:
             base_link:
+              close_lb:
+                {}
+              close_lt:
+                {}
+              close_rb:
+                {}
+              close_rt:
+                {}
               drag_link:
+                {}
+              lb:
                 {}
               left_back_wheel:
                 {}
@@ -224,11 +250,15 @@ Visualization Manager:
                           link7:
                             tools_link:
                               {}
+              lt:
+                {}
               mimic_drag_link:
                 {}
               pitch_behind_link:
                 {}
               pitch_front_link:
+                {}
+              rb:
                 {}
               real_world:
                 {}
@@ -239,6 +269,8 @@ Visualization Manager:
               roll_left_link:
                 {}
               roll_right_link:
+                {}
+              rt:
                 {}
       Update Interval: 0
       Value: true
@@ -258,7 +290,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 2.5496058464050293
+      Distance: 1.1131685972213745
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -266,17 +298,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.75
       Focal Point:
-        X: 0.7245195508003235
-        Y: -0.20418229699134827
-        Z: 0.7256882190704346
+        X: 0.6650072336196899
+        Y: -0.2799709737300873
+        Z: 0.7892642617225647
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.974797248840332
+      Pitch: 0.38979804515838623
       Target Frame: base_link
-      Yaw: 4.168304443359375
+      Yaw: 4.538305282592773
     Saved: ~
 Window Geometry:
   Displays:

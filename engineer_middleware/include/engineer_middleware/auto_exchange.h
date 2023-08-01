@@ -495,6 +495,7 @@ public:
     pid_pitch_.init(ros::NodeHandle(nh_pid_pitch, "pid"));
     pid_yaw_.init(ros::NodeHandle(nh_pid_yaw, "pid"));
 
+    close_tolerance_ = auto_servo_move["close_tolerance"];
     for (int i = 0; i < (int)xyz_offset_.size(); ++i)
       xyz_offset_[i] = auto_servo_move["xyz_offset"][i];
     for (int i = 0; i < (int)servo_error_tolerance_.size(); ++i)
@@ -647,7 +648,7 @@ private:
         move_joint_num++;
         if (process_ == YZ)
         {
-          if (abs(servo_errors_[i]) <= 10 * servo_error_tolerance_[i])
+          if (abs(servo_errors_[i]) <= close_tolerance_)
             arrived_joint_num++;
         }
         else
@@ -672,7 +673,7 @@ private:
   }
 
   ros::Time last_time_;
-  double link7_length_{}, joint7_msg_{}, rectify_x_, rectify_z_;
+  double link7_length_{}, joint7_msg_{}, rectify_x_, rectify_z_, close_tolerance_;
   control_toolbox::Pid pid_x_, pid_y_, pid_re_y_, pid_re_z_, pid_z_, pid_roll_, pid_pitch_, pid_yaw_;
   std::vector<double> xyz_offset_{}, servo_errors_{}, servo_scales_{}, servo_error_tolerance_{}, servo_pid_value_{};
 };
