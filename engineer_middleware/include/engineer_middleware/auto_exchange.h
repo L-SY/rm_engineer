@@ -145,7 +145,7 @@ public:
   enum FindProcess
   {
     SWING,
-    FOUND,
+    ADJUST,
     FINISH
   };
   Find(XmlRpc::XmlRpcValue& find, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh) : ProgressBase(find, tf_buffer, nh)
@@ -160,7 +160,6 @@ public:
     ROS_ASSERT(find["pitch"].getType() == XmlRpc::XmlRpcValue::TypeStruct);
     yaw_ = new JointInfo(find["yaw"]);
     pitch_ = new JointInfo(find["pitch"]);
-    confirm_lock_time_ = xmlRpcGetDouble(find, "confirm_lock_time", 10);
     visual_recognition_sub_ =
         nh_.subscribe<rm_msgs::ExchangerMsg>("/pnp_publisher", 1, &Find::visualRecognitionCallback, this);
     ROS_INFO_STREAM("~~~~~~~~~~~~~FIND~~~~~~~~~~~~~~~~");
@@ -169,7 +168,6 @@ public:
   {
     ProgressBase::init();
     process_ = { SWING };
-    lock_time_ = 0;
     initScales();
   }
   std::vector<double> getGimbalScale()
@@ -179,6 +177,11 @@ public:
   std::vector<double> getChassisScale()
   {
     return chassis_scale_;
+  }
+  void testAdjust()
+  {
+    gimbal_scale_[0] = middle_point_.x / 50;
+    gimbal_scale_[1] = middle_point_.y / 50;
   }
 
 private:
@@ -190,21 +193,16 @@ private:
       {
         autoSearch(false, true);
         if (is_found_)
-        {
-          lock_time_ = 0;
-          process_ = FOUND;
-        }
+          process_ = ADJUST;
       }
       break;
-      case FOUND:
+      case ADJUST:
       {
         if (is_found_)
         {
-          gimbal_scale_[0] /= 10;
-          gimbal_scale_[1] /= 10;
-          if (lock_time_ <= confirm_lock_time_)
-            lock_time_++;
-          else
+          gimbal_scale_[0] = middle_point_.x / 50;
+          gimbal_scale_[1] = middle_point_.y / 50;
+          if (sqrt(pow(middle_point_.x, 2) + pow(middle_point_.y, 2)) < 10)
             process_ = FINISH;
         }
         else
@@ -248,7 +246,7 @@ private:
   {
     if (process_ == SWING)
       ROS_INFO_STREAM("SWING");
-    else if (process_ == FOUND)
+    else if (process_ == ADJUST)
       ROS_INFO_STREAM("FOUND");
     else if (process_ == FINISH)
       ROS_INFO_STREAM("FINISH");
@@ -264,13 +262,14 @@ private:
   void visualRecognitionCallback(const rm_msgs::ExchangerMsg ::ConstPtr& msg)
   {
     is_found_ = msg->flag;
+    middle_point_ = msg->middle_point;
   }
-  int lock_time_{ 0 };
   JointInfo *yaw_{}, *pitch_{};
   bool is_found_{ false };
+  geometry_msgs::Point middle_point_;
   std::vector<double> gimbal_scale_{}, chassis_scale_{};
   ros::Subscriber visual_recognition_sub_{};
-  double search_range_{}, confirm_lock_time_{};
+  double search_range_{};
 };
 
 class ProAdjust : public ProgressBase
@@ -424,7 +423,9 @@ private:
     quatToRPY(base2exchange.transform.rotation, roll, pitch, yaw);
 
     double goal_x = base2exchange.transform.translation.x - x_.offset_refer_exchanger;
-    double goal_y = base2exchange.transform.translation.y - y_.offset_refer_exchanger - yaw * 0.05;
+    ROS_INFO_STREAM("BEFORE:   " << base2exchange.transform.translation.y);
+    double goal_y = base2exchange.transform.translation.y - y_.offset_refer_exchanger - yaw * 0.2;
+    ROS_INFO_STREAM("AFTER:   " << goal_y);
     double goal_yaw = yaw * yaw_.offset_refer_exchanger;
     chassis_original_target_.pose.position.x = goal_x;
     chassis_original_target_.pose.position.y = goal_y;
@@ -713,10 +714,11 @@ public:
   void init() override
   {
     ProgressBase::init();
+    process_ = FIND;
+    re_find_ = false;
     find_->init();
     pre_adjust_->init();
     auto_servo_move_->init();
-    process_ = FIND;
     exchangerTfUpdate(true);
   }
 
@@ -741,7 +743,7 @@ private:
         find_->run();
         if (find_->getFinishFlag())
         {
-          process_ = PRE_ADJUST;
+          process_ = re_find_ ? MOVE : PRE_ADJUST;
           find_->init();
         }
       }
@@ -752,7 +754,8 @@ private:
         pre_adjust_->run();
         if (pre_adjust_->getFinishFlag())
         {
-          process_ = MOVE;
+          process_ = FIND;
+          re_find_ = true;
           pre_adjust_->init();
         }
       }
@@ -782,6 +785,7 @@ private:
     else if (process_ == FINISH)
       ROS_INFO_STREAM("FINISH");
   }
+  bool re_find_{ false };
   // tf update
   std_msgs::Bool is_exchanger_tf_update_{};
   ros::Publisher exchanger_tf_update_pub_;
