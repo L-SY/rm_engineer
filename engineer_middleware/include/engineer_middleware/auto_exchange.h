@@ -180,8 +180,8 @@ public:
   }
   void testAdjust()
   {
-    gimbal_scale_[0] = middle_point_.x / 50;
-    gimbal_scale_[1] = middle_point_.y / 50;
+    gimbal_scale_[0] = middle_point_.x / 200;
+    gimbal_scale_[1] = middle_point_.y / 200;
   }
 
 private:
@@ -200,9 +200,9 @@ private:
       {
         if (is_found_)
         {
-          gimbal_scale_[0] = middle_point_.x / 50;
-          gimbal_scale_[1] = middle_point_.y / 50;
-          if (sqrt(pow(middle_point_.x, 2) + pow(middle_point_.y, 2)) < 10)
+          gimbal_scale_[0] = middle_point_.x / abs(middle_point_.x) * yaw_->max_scale_;
+          gimbal_scale_[1] = middle_point_.y / abs(middle_point_.y) * pitch_->max_scale_;
+          if (sqrt(pow(middle_point_.x, 2) + pow(middle_point_.y, 2)) < 200)
             process_ = FINISH;
         }
         else
@@ -423,9 +423,7 @@ private:
     quatToRPY(base2exchange.transform.rotation, roll, pitch, yaw);
 
     double goal_x = base2exchange.transform.translation.x - x_.offset_refer_exchanger;
-    ROS_INFO_STREAM("BEFORE:   " << base2exchange.transform.translation.y);
-    double goal_y = base2exchange.transform.translation.y - y_.offset_refer_exchanger - yaw * 0.2;
-    ROS_INFO_STREAM("AFTER:   " << goal_y);
+    double goal_y = base2exchange.transform.translation.y - y_.offset_refer_exchanger - yaw * 0.5;
     double goal_yaw = yaw * yaw_.offset_refer_exchanger;
     chassis_original_target_.pose.position.x = goal_x;
     chassis_original_target_.pose.position.y = goal_y;
