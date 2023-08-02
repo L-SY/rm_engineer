@@ -325,6 +325,7 @@ public:
   {
     ProgressBase::init();
     process_ = SET_GOAL;
+    initComputerValue();
   }
   void stateMachine() override
   {
@@ -351,7 +352,10 @@ public:
         chassis_vel_cmd_.linear.y = 0.;
         chassis_vel_cmd_.angular.z = 0.;
         if (x_.isFinish())
-          process_ = CHASSIS_YAW;
+        {
+          process_ = re_x_ ? FINISH : CHASSIS_YAW;
+          re_x_ = false;
+        }
       }
       break;
       case CHASSIS_YAW:
@@ -361,7 +365,8 @@ public:
         chassis_vel_cmd_.linear.y = 0.;
         if (yaw_.isFinish())
         {
-          process_ = FINISH;
+          process_ = CHASSIS_X;
+          re_x_ = true;
         }
       }
       break;
@@ -423,7 +428,7 @@ private:
     quatToRPY(base2exchange.transform.rotation, roll, pitch, yaw);
 
     double goal_x = base2exchange.transform.translation.x - x_.offset_refer_exchanger;
-    double goal_y = base2exchange.transform.translation.y - y_.offset_refer_exchanger - yaw * 0.5;
+    double goal_y = base2exchange.transform.translation.y - y_.offset_refer_exchanger - yaw * 0.2;
     double goal_yaw = yaw * yaw_.offset_refer_exchanger;
     chassis_original_target_.pose.position.x = goal_x;
     chassis_original_target_.pose.position.y = goal_y;
@@ -435,6 +440,7 @@ private:
     tf2::doTransform(chassis_target_, chassis_target_, tf_buffer_.lookupTransform("map", "base_link", ros::Time(0)));
   }
 
+  bool re_x_{ false };
   ros::Time last_time_;
   std::string chassis_command_source_frame_{ "base_link" };
   geometry_msgs::Twist chassis_vel_cmd_{};
