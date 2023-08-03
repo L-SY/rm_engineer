@@ -732,6 +732,34 @@ public:
   {
     return motion_name_;
   }
+  bool getIsMotionFinish()
+  {
+    return is_motion_finish_;
+  }
+  bool getIsMotionStart()
+  {
+    return is_motion_start_;
+  }
+  void changeIsMotionFinish(bool state)
+  {
+    is_motion_finish_ = state;
+  }
+  void changeIsMotionStart(bool state)
+  {
+    is_motion_start_ = state;
+  }
+  std::vector<double> getServoScale()
+  {
+    return servo_scales_;
+  }
+  void init() override
+  {
+    ProgressBase::init();
+    initComputerValue();
+    process_ = MOTION;
+    is_motion_start_ = false;
+    is_motion_finish_ = false;
+  }
 
 private:
   void printProcess() override
@@ -829,7 +857,7 @@ private:
         is_finish_ = true;
     }
   }
-  bool is_motion_finish_{ false };
+  bool is_motion_finish_{ false }, is_motion_start_{ false };
   ros::Time last_time_;
   SingleDirectionMove x_, y_, z_;
   std::string motion_name_;
@@ -897,7 +925,7 @@ public:
     re_find_ = false;
     find_->init();
     pre_adjust_->init();
-    auto_servo_move_->init();
+    union_move_->init();
     exchangerTfUpdate(true);
   }
 
@@ -951,12 +979,11 @@ private:
       case MOVE:
       {
         exchangerTfUpdate(false);
-        auto_servo_move_->run();
-        auto_servo_move_->printProcess();
-        if (auto_servo_move_->getFinishFlag())
+        union_move_->run();
+        if (union_move_->getFinishFlag())
         {
           is_finish_ = true;
-          auto_servo_move_->init();
+          union_move_->init();
         }
       }
       break;
