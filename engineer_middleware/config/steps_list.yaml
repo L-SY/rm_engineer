@@ -1366,11 +1366,6 @@ steps_list:
           <<: *QUICKLY
 
   EXCHANGE_SPHERE:
-    - step: "test joint7"
-      end_effector:
-        original_tf: base_link
-        reference_tf: exchanger
-        direction: pitch
     - step: "test new exchange"
       arm:
         frame: exchanger
@@ -1378,11 +1373,46 @@ steps_list:
         xyz: [ -0.4, 0., -0.15 ]
         rpy: [ 0., 0., 0. ]
         drift_dimensions: [ true, true, true, true, false, true]
-        tolerance_position: 0.1
-        tolerance_orientation: 0.1
+        tolerance_position: 0.08
+        tolerance_orientation: 0.08
         spacial_shape: SPHERE
         radius: 0.1
         point_resolution: 0.5
         max_planning_times: 100
         common:
           <<: *QUICKLY
+    - step: "test joint7"
+      end_effector:
+        original_tf: base_link
+        reference_tf: exchanger
+        direction: pitch
+#    - step: "test new exchange"
+#      arm:
+#        frame: exchanger
+#        is_refer_planning_frame: false
+#        xyz: [ -0.1, 0., 0. ]
+#        rpy: [ 0., 0., 0. ]
+#        drift_dimensions: [ true, true, true, true, false, true ]
+#        tolerance_position: 0.05
+#        tolerance_orientation: 0.05
+#        spacial_shape: SPHERE
+#        radius: 0.1
+#        point_resolution: 0.5
+#        max_planning_times: 100
+#        common:
+#          <<: *SLOWLY
+#    - step: "test new exchange"
+#      arm:
+#        frame: exchanger
+#        is_refer_planning_frame: false
+#        xyz: [ 0., 0., 0. ]
+#        rpy: [ 0., 0., 0. ]
+#        drift_dimensions: [ true, true, true, true, false, true ]
+#        tolerance_position: 0.05
+#        tolerance_orientation: 0.05
+#        spacial_shape: SPHERE
+#        radius: 0.1
+#        point_resolution: 0.5
+#        max_planning_times: 100
+#        common:
+#          <<: *SLOWLY
