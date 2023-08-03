@@ -437,8 +437,8 @@ private:
     base2exchange = tf_buffer_.lookupTransform("base_link", "exchanger", ros::Time(0));
     quatToRPY(base2exchange.transform.rotation, roll, pitch, yaw);
 
-    double goal_x = base2exchange.transform.translation.x - x_.offset_refer_exchanger - pitch * 0.03;
-    double goal_y = base2exchange.transform.translation.y - y_.offset_refer_exchanger - yaw * 0.1;
+    double goal_x = base2exchange.transform.translation.x - x_.offset_refer_exchanger - pitch * 0.1;
+    double goal_y = base2exchange.transform.translation.y - y_.offset_refer_exchanger - yaw * 0.2;
     double goal_yaw = yaw * yaw_.offset_refer_exchanger;
     chassis_original_target_.pose.position.x = goal_x;
     chassis_original_target_.pose.position.y = goal_y;
@@ -466,9 +466,10 @@ public:
     YZ,
     YAW,
     ROLL,
+    REZ,
     PITCH,
     REY,
-    REZ,
+    RREZ,
     PUSH,
     FINISH
   };
@@ -602,10 +603,10 @@ private:
       servo_pid_value_[1] = pid_y_.computeCommand(servo_errors_[1], dt);
     else
       servo_pid_value_[1] = pid_re_y_.computeCommand(servo_errors_[1], dt);
-    if (process_ != REZ)
-      servo_pid_value_[2] = pid_z_.computeCommand(servo_errors_[2], dt);
-    else
+    if (process_ == REZ || process_ == RREZ)
       servo_pid_value_[2] = pid_re_z_.computeCommand(servo_errors_[2], dt);
+    else
+      servo_pid_value_[2] = pid_z_.computeCommand(servo_errors_[2], dt);
     servo_pid_value_[3] = pid_roll_.computeCommand(servo_errors_[3], dt);
     servo_pid_value_[4] = pid_pitch_.computeCommand(servo_errors_[4], dt);
     servo_pid_value_[5] = pid_yaw_.computeCommand(servo_errors_[5], dt);
@@ -631,6 +632,11 @@ private:
         servo_scales_[3] = servo_pid_value_[3];
       }
       break;
+      case REZ:
+      {
+        servo_scales_[2] = servo_pid_value_[2];
+      }
+      break;
       case PITCH:
       {
         joint7_msg_ = servo_errors_[4];
@@ -641,7 +647,7 @@ private:
         servo_scales_[1] = servo_pid_value_[1];
       }
       break;
-      case REZ:
+      case RREZ:
       {
         servo_scales_[2] = servo_pid_value_[2];
       }
