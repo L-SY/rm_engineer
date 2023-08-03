@@ -437,7 +437,7 @@ private:
     base2exchange = tf_buffer_.lookupTransform("base_link", "exchanger", ros::Time(0));
     quatToRPY(base2exchange.transform.rotation, roll, pitch, yaw);
 
-    double goal_x = base2exchange.transform.translation.x - x_.offset_refer_exchanger;
+    double goal_x = base2exchange.transform.translation.x - x_.offset_refer_exchanger - pitch * 0.1;
     double goal_y = base2exchange.transform.translation.y - y_.offset_refer_exchanger - yaw * 0.2;
     double goal_yaw = yaw * yaw_.offset_refer_exchanger;
     chassis_original_target_.pose.position.x = goal_x;
@@ -464,9 +464,7 @@ public:
   enum ServoMoveProcess
   {
     YZ,
-    YAW,
-    ROLL,
-    PITCH,
+    RPY,
     REY,
     REZ,
     PUSH,
@@ -481,7 +479,7 @@ public:
 
     process_ = YZ;
     last_process_ = process_;
-    process_num_ = 8;
+    process_num_ = 6;
 
     xyz_offset_.resize(3, 0.);
     servo_pid_value_.resize(6, 0.);
@@ -507,6 +505,10 @@ public:
     pid_yaw_.init(ros::NodeHandle(nh_pid_yaw, "pid"));
 
     close_tolerance_ = auto_servo_move["close_tolerance"];
+    roll_offset_ = auto_servo_move["roll_offset"];
+    pitch_offset_ = auto_servo_move["pitch_offset"];
+    yaw_offset_ = auto_servo_move["yaw_offset"];
+
     for (int i = 0; i < (int)xyz_offset_.size(); ++i)
       xyz_offset_[i] = auto_servo_move["xyz_offset"][i];
     for (int i = 0; i < (int)servo_error_tolerance_.size(); ++i)
@@ -536,12 +538,8 @@ public:
   {
     if (process_ == YZ)
       ROS_INFO_STREAM("YZ");
-    else if (process_ == YAW)
-      ROS_INFO_STREAM("YAW");
-    else if (process_ == ROLL)
-      ROS_INFO_STREAM("ROLL");
-    else if (process_ == PITCH)
-      ROS_INFO_STREAM("PITCH");
+    else if (process_ == RPY)
+      ROS_INFO_STREAM("RPY");
     else if (process_ == REY)
       ROS_INFO_STREAM("REY");
     else if (process_ == REZ)
@@ -587,9 +585,9 @@ private:
                                            (tools2exchanger.transform.translation.x - xyz_offset_[0]));
     servo_errors_[1] = tools2exchanger.transform.translation.y - xyz_offset_[1];
     servo_errors_[2] = tools2exchanger.transform.translation.z - xyz_offset_[2];
-    servo_errors_[3] = roll;
-    servo_errors_[4] = pitch;
-    servo_errors_[5] = yaw;
+    servo_errors_[3] = roll * roll_offset_;
+    servo_errors_[4] = pitch * pitch_offset_;
+    servo_errors_[5] = yaw * yaw_offset_;
     ros::Duration dt = ros::Time::now() - last_time_;
     last_time_ = ros::Time::now();
 
@@ -617,18 +615,10 @@ private:
         servo_scales_[2] = servo_pid_value_[2];
       }
       break;
-      case YAW:
+      case RPY:
       {
         servo_scales_[5] = servo_pid_value_[5];
-      }
-      break;
-      case ROLL:
-      {
         servo_scales_[3] = servo_pid_value_[3];
-      }
-      break;
-      case PITCH:
-      {
         joint7_msg_ = servo_errors_[4];
       }
       break;
@@ -684,7 +674,8 @@ private:
   }
 
   ros::Time last_time_;
-  double link7_length_{}, joint7_msg_{}, rectify_x_, rectify_z_, close_tolerance_;
+  double link7_length_{}, joint7_msg_{}, rectify_x_, rectify_z_, close_tolerance_, roll_offset_, pitch_offset_,
+      yaw_offset_;
   control_toolbox::Pid pid_x_, pid_y_, pid_re_y_, pid_re_z_, pid_z_, pid_roll_, pid_pitch_, pid_yaw_;
   std::vector<double> xyz_offset_{}, servo_errors_{}, servo_scales_{}, servo_error_tolerance_{}, servo_pid_value_{};
 };
