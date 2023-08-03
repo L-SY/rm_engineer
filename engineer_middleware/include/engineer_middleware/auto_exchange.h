@@ -619,7 +619,7 @@ private:
       break;
       case PITCH:
       {
-        joint7_msg_ = servo_errors_[4];
+        joint7_msg_ = pitch_.error;
       }
       break;
       case REY:
@@ -649,12 +649,12 @@ private:
         move_joint_num++;
         if (process_ == YZ)
         {
-          if (abs(servo_errors_[i]) <= (y_.tolerance + z_.tolerance) / 2)
+          if (abs(move_gather_[i].error) <= (y_.tolerance + z_.tolerance) / 2)
             arrived_joint_num++;
         }
         else
         {
-          if (abs(servo_errors_[i]) <= move_gather_[i].tolerance)
+          if (abs(move_gather_[i].error) <= move_gather_[i].tolerance)
             arrived_joint_num++;
         }
       }
