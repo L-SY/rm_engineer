@@ -379,10 +379,10 @@ private:
     geometry_msgs::Pose pose = interface_.getCurrentPose().pose;
     double roll_current, pitch_current, yaw_current, roll_goal, pitch_goal, yaw_goal;
     quatToRPY(pose.orientation, roll_current, pitch_current, yaw_current);
-    quatToRPY(target_.pose.orientation, roll_goal, pitch_goal, yaw_goal);
-    return (std::pow(pose.position.x - target_.pose.position.x, 2) +
-                    std::pow(pose.position.y - target_.pose.position.y, 2) +
-                    std::pow(pose.position.z - target_.pose.position.z, 2) <
+    quatToRPY(final_target_.pose.orientation, roll_goal, pitch_goal, yaw_goal);
+    return (std::pow(pose.position.x - final_target_.pose.position.x, 2) +
+                    std::pow(pose.position.y - final_target_.pose.position.y, 2) +
+                    std::pow(pose.position.z - final_target_.pose.position.z, 2) <
                 tolerance_position_ &&
             std::abs(angles::shortest_angular_distance(yaw_current, yaw_goal)) +
                     std::abs(angles::shortest_angular_distance(pitch_current, pitch_goal)) +
