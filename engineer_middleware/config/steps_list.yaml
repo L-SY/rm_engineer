@@ -1373,8 +1373,8 @@ steps_list:
         xyz: [ -0.4, 0., -0.15 ]
         rpy: [ 0., 0., 0. ]
         drift_dimensions: [ true, true, true, true, false, true]
-        tolerance_position: 0.08
-        tolerance_orientation: 0.08
+        tolerance_position: 0.1
+        tolerance_orientation: 0.1
         spacial_shape: SPHERE
         radius: 0.1
         point_resolution: 0.5
