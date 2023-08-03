@@ -437,8 +437,8 @@ private:
     base2exchange = tf_buffer_.lookupTransform("base_link", "exchanger", ros::Time(0));
     quatToRPY(base2exchange.transform.rotation, roll, pitch, yaw);
 
-    double goal_x = base2exchange.transform.translation.x - x_.offset_refer_exchanger - pitch * 0.1;
-    double goal_y = base2exchange.transform.translation.y - y_.offset_refer_exchanger - yaw * 0.2;
+    double goal_x = base2exchange.transform.translation.x - x_.offset_refer_exchanger - pitch * 0.03;
+    double goal_y = base2exchange.transform.translation.y - y_.offset_refer_exchanger - yaw * 0.1;
     double goal_yaw = yaw * yaw_.offset_refer_exchanger;
     chassis_original_target_.pose.position.x = goal_x;
     chassis_original_target_.pose.position.y = goal_y;
@@ -464,7 +464,9 @@ public:
   enum ServoMoveProcess
   {
     YZ,
-    RPY,
+    YAW,
+    ROLL,
+    PITCH,
     REY,
     REZ,
     PUSH,
@@ -538,8 +540,12 @@ public:
   {
     if (process_ == YZ)
       ROS_INFO_STREAM("YZ");
-    else if (process_ == RPY)
-      ROS_INFO_STREAM("RPY");
+    else if (process_ == YAW)
+      ROS_INFO_STREAM("YAW");
+    else if (process_ == ROLL)
+      ROS_INFO_STREAM("ROLL");
+    else if (process_ == PITCH)
+      ROS_INFO_STREAM("PITCH");
     else if (process_ == REY)
       ROS_INFO_STREAM("REY");
     else if (process_ == REZ)
@@ -615,10 +621,18 @@ private:
         servo_scales_[2] = servo_pid_value_[2];
       }
       break;
-      case RPY:
+      case YAW:
       {
         servo_scales_[5] = servo_pid_value_[5];
+      }
+      break;
+      case ROLL:
+      {
         servo_scales_[3] = servo_pid_value_[3];
+      }
+      break;
+      case PITCH:
+      {
         joint7_msg_ = servo_errors_[4];
       }
       break;
