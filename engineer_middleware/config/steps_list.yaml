@@ -48,7 +48,7 @@ common:
       one_stone_position: &JOINT1_ONE_STONE_POSITION
                             0.08
       two_stone_position: &JOINT1_TWO_STONE_POSITION
-                            0.142700
+                            0.145700
       three_stone_position: &JOINT1_THREE_STONE_POSITION
                               0.35
     get_ore:
@@ -346,11 +346,11 @@ common:
       delay: 1.1
     position_z_out: &POSITION_Z_OUT
       mode: "POSITION"
-      values: [ 0.,0.,19.,0.,0.,0. ]
+      values: [ 0.,0.,20.,0.,0.,0. ]
       delay: 0.2
     position_z_out_little: &POSITION_Z_OUT_LITTLE
       mode: "POSITION"
-      values: [ 0.,0.,5.,0.,0.,0. ]
+      values: [ 0.,0.,3.,0.,0.,0. ]
       delay: 0.4
     position_z_out_little2: &POSITION_Z_OUT_LITTLE2
       mode: "POSITION"
@@ -365,7 +365,7 @@ common:
       delay: 0.6
     position_pitch_reversal_pi: &POSITION_PITCH_REVERSAL_PI
       mode: "POSITION"
-      values: [ 0.,0.,0.,0.,-120,0. ]
+      values: [ 0.,0.,0.,0.,-90,0. ]
       delay: 1
 
   chassis_move:
@@ -770,10 +770,6 @@ steps_list:
       arm:
         <<: *READY_TO_ACCESS_STORE
         variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
-    - step: "move up with stone and ready to get stone"
-      arm:
-        <<: *READY_TO_ACCESS_STORE
-        variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
     - step: "reversal pitch pi"
       reversal:
         <<: *POSITION_PITCH_REVERSAL_PI
@@ -823,6 +819,9 @@ steps_list:
       arm:
         <<: *READY_TO_ACCESS_STORE
         variable: [ *JOINT1_TWO_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
+    - step: "position out little"
+      reversal:
+        <<: *POSITION_Z_OUT_LITTLE
     - step: "move up with stone and ready to get stone"
       arm:
         <<: *READY_TO_ACCESS_STORE
