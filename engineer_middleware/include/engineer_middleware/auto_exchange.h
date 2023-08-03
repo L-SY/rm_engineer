@@ -552,6 +552,14 @@ private:
       servo_pid_value_[i] = 0.;
       servo_scales_[i] = 0.;
     }
+    move_gather_[0] = x_;
+    move_gather_[1] = y_;
+    move_gather_[2] = z_;
+    move_gather_[3] = roll_;
+    move_gather_[4] = pitch_;
+    move_gather_[5] = yaw_;
+    move_gather_[6] = re_y_;
+    move_gather_[7] = re_z_;
   }
   void computeServoMoveError()
   {
@@ -655,6 +663,16 @@ private:
           if (abs(move_gather_[i].error) <= (y_.tolerance + z_.tolerance) / 2)
             arrived_joint_num++;
         }
+        else if (process_ == REZ)
+        {
+          if (abs(re_z_.error) <= re_z_.tolerance)
+            arrived_joint_num++;
+        }
+        else if (process_ == REY)
+        {
+          if (abs(re_y_.error) <= re_y_.tolerance)
+            arrived_joint_num++;
+        }
         else
         {
           if (abs(move_gather_[i].error) <= move_gather_[i].tolerance)
@@ -732,9 +750,13 @@ private:
   }
   void initComputerValue()
   {
-    x_.error = 0.;
-    y_.error = 0.;
-    z_.error = 0.;
+    for (int i = 0; i < (int)servo_scales_.size(); ++i)
+    {
+      servo_scales_[i] = 0.;
+    }
+    move_gather_[0] = x_;
+    move_gather_[1] = y_;
+    move_gather_[2] = z_;
   }
   void computeServoMoveError()
   {
