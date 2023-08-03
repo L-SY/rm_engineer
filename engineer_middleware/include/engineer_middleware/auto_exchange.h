@@ -12,14 +12,6 @@
 
 namespace auto_exchange
 {
-enum MotionMoveProcess
-{
-  SPHERE,
-  LINE,
-  POINT,
-  ACHIEVE
-};
-
 class JointInfo
 {
 public:
@@ -49,6 +41,41 @@ public:
 public:
   int move_direct_;
   double offset_, max_position_, min_position_, current_position_, max_scale_, near_tolerance_;
+};
+
+class SingleDirectionMove
+{
+public:
+  std::string name;
+  double tolerance, start_vel, offset_refer_exchanger, max_vel, error, pid_value;
+  control_toolbox::Pid pid;
+  void init(XmlRpc::XmlRpcValue& config, std::string config_name, ros::NodeHandle& nh)
+  {
+    name = config_name;
+    error = 1e10;
+    max_vel = config.hasMember("max_vel") ? (double)config["max_vel"] : 1e10;
+    start_vel = config.hasMember("start_vel") ? (double)config["start_vel"] : 0.;
+    tolerance = config.hasMember("tolerance") ? (double)config["tolerance"] : 1e10;
+    offset_refer_exchanger = config.hasMember("offset_refer_exchanger") ? (double)config["offset_refer_exchanger"] : 0.;
+    ros::NodeHandle pid_config = ros::NodeHandle(nh, name);
+    pid.init(ros::NodeHandle(pid_config, "pid"));
+  }
+  bool isFinish()
+  {
+    return abs(error) <= tolerance;
+  }
+  double computerVel(ros::Duration dt)
+  {
+    double vel = start_vel + abs(pid.computeCommand(error, dt));
+    int direction = error / abs(error);
+    return abs(vel) >= max_vel ? direction * max_vel : direction * vel;
+  }
+  void getPidValue(ros::Duration dt)
+  {
+    double vel = start_vel + abs(pid.computeCommand(error, dt));
+    int direction = error / abs(error);
+    pid_value = abs(vel) >= max_vel ? direction * max_vel : direction * vel;
+  }
 };
 
 class ProgressBase
@@ -293,33 +320,6 @@ public:
     CHASSIS_YAW,
     FINISH
   };
-  struct ChassisSingleDirectionMove
-  {
-    std::string name;
-    double tolerance, start_vel, offset_refer_exchanger, max_vel, error;
-    control_toolbox::Pid pid;
-    void init(XmlRpc::XmlRpcValue& chassis_move_config, std::string config_name, ros::NodeHandle& nh)
-    {
-      name = config_name;
-      error = 1e10;
-      max_vel = chassis_move_config["max_vel"];
-      start_vel = chassis_move_config["start_vel"];
-      tolerance = chassis_move_config["tolerance"];
-      offset_refer_exchanger = chassis_move_config["offset_refer_exchanger"];
-      ros::NodeHandle nh_chassis_move_config = ros::NodeHandle(nh, name);
-      pid.init(ros::NodeHandle(nh_chassis_move_config, "pid"));
-    }
-    bool isFinish()
-    {
-      return abs(error) <= tolerance;
-    }
-    double computerVel(ros::Duration dt)
-    {
-      double vel = start_vel + abs(pid.computeCommand(error, dt));
-      int direction = error / abs(error);
-      return abs(vel) >= max_vel ? direction * max_vel : direction * vel;
-    }
-  };
   ProAdjust(XmlRpc::XmlRpcValue& pre_adjust, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh)
     : ProgressBase(pre_adjust, tf_buffer, nh)
   {
@@ -455,7 +455,7 @@ private:
   std::string chassis_command_source_frame_{ "base_link" };
   geometry_msgs::Twist chassis_vel_cmd_{};
   geometry_msgs::PoseStamped chassis_target_{}, chassis_original_target_{};
-  ChassisSingleDirectionMove x_, y_, yaw_;
+  SingleDirectionMove x_, y_, yaw_;
 };
 
 class AutoServoMove : public ProgressBase
@@ -476,48 +476,30 @@ public:
   AutoServoMove(XmlRpc::XmlRpcValue& auto_servo_move, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh)
     : ProgressBase(auto_servo_move, tf_buffer, nh), joint7_msg_(0.)
   {
-    ROS_ASSERT(auto_servo_move["xyz_offset"].getType() == XmlRpc::XmlRpcValue::TypeArray);
-    ROS_ASSERT(auto_servo_move["servo_error_tolerance"].getType() == XmlRpc::XmlRpcValue::TypeArray);
-    ROS_ASSERT(auto_servo_move["link7_length"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
-
     process_ = YZ;
     last_process_ = process_;
     process_num_ = 6;
 
-    xyz_offset_.resize(3, 0.);
+    x_.init(auto_servo_move["x"], "x", nh);
+    y_.init(auto_servo_move["y"], "y", nh);
+    z_.init(auto_servo_move["z"], "z", nh);
+    re_y_.init(auto_servo_move["re_y"], "re_y", nh);
+    re_z_.init(auto_servo_move["re_z"], "re_z", nh);
+    roll_.init(auto_servo_move["roll"], "roll", nh);
+    pitch_.init(auto_servo_move["pitch"], "pitch", nh);
+    yaw_.init(auto_servo_move["yaw"], "yaw", nh);
+    move_gather_.clear();
+    move_gather_.push_back(x_);
+    move_gather_.push_back(y_);
+    move_gather_.push_back(z_);
+    move_gather_.push_back(roll_);
+    move_gather_.push_back(pitch_);
+    move_gather_.push_back(yaw_);
+    move_gather_.push_back(re_y_);
+    move_gather_.push_back(re_z_);
+
     servo_pid_value_.resize(6, 0.);
-    servo_errors_.resize(6, 0.);
     servo_scales_.resize(6, 0.);
-    servo_error_tolerance_.resize(6, 0.01);
-    ros::NodeHandle nh_servo_pid = ros::NodeHandle(nh, "servo_pid");
-    ros::NodeHandle nh_pid_x = ros::NodeHandle(nh_servo_pid, "x");
-    ros::NodeHandle nh_pid_y = ros::NodeHandle(nh_servo_pid, "y");
-    ros::NodeHandle nh_pid_re_y = ros::NodeHandle(nh_servo_pid, "re_y");
-    ros::NodeHandle nh_pid_re_z = ros::NodeHandle(nh_servo_pid, "re_z");
-    ros::NodeHandle nh_pid_z = ros::NodeHandle(nh_servo_pid, "z");
-    ros::NodeHandle nh_pid_roll = ros::NodeHandle(nh_servo_pid, "roll");
-    ros::NodeHandle nh_pid_pitch = ros::NodeHandle(nh_servo_pid, "pitch");
-    ros::NodeHandle nh_pid_yaw = ros::NodeHandle(nh_servo_pid, "yaw");
-    pid_x_.init(ros::NodeHandle(nh_pid_x, "pid"));
-    pid_y_.init(ros::NodeHandle(nh_pid_y, "pid"));
-    pid_re_y_.init(ros::NodeHandle(nh_pid_re_y, "pid"));
-    pid_re_z_.init(ros::NodeHandle(nh_pid_re_z, "pid"));
-    pid_z_.init(ros::NodeHandle(nh_pid_z, "pid"));
-    pid_roll_.init(ros::NodeHandle(nh_pid_roll, "pid"));
-    pid_pitch_.init(ros::NodeHandle(nh_pid_pitch, "pid"));
-    pid_yaw_.init(ros::NodeHandle(nh_pid_yaw, "pid"));
-
-    close_tolerance_ = auto_servo_move["close_tolerance"];
-    roll_offset_ = auto_servo_move["roll_offset"];
-    pitch_offset_ = auto_servo_move["pitch_offset"];
-    yaw_offset_ = auto_servo_move["yaw_offset"];
-
-    for (int i = 0; i < (int)xyz_offset_.size(); ++i)
-      xyz_offset_[i] = auto_servo_move["xyz_offset"][i];
-    for (int i = 0; i < (int)servo_error_tolerance_.size(); ++i)
-    {
-      servo_error_tolerance_[i] = auto_servo_move["servo_error_tolerance"][i];
-    }
     ROS_INFO_STREAM("~~~~~~~~~~~~~SERVO_MOVE~~~~~~~~~~~~~~~~");
   }
   ~AutoServoMove() = default;
@@ -565,12 +547,8 @@ private:
   }
   void initComputerValue()
   {
-    for (int i = 0; i < (int)servo_scales_.size(); ++i)
-    {
-      servo_errors_[i] = 0;
-      servo_scales_[i] = 0;
-      servo_pid_value_[i] = 0;
-    }
+    for (int i = 0; i < (int)move_gather_.size(); ++i)
+      move_gather_[i].error = 0.;
   }
   void computeServoMoveError()
   {
@@ -587,29 +565,31 @@ private:
     {
       ROS_WARN("%s", ex.what());
     }
-    initComputerValue();
-    servo_errors_[0] = (process_ == PUSH ? (tools2exchanger.transform.translation.x) :
-                                           (tools2exchanger.transform.translation.x - xyz_offset_[0]));
-    servo_errors_[1] = tools2exchanger.transform.translation.y - xyz_offset_[1];
-    servo_errors_[2] = tools2exchanger.transform.translation.z - xyz_offset_[2];
-    servo_errors_[3] = roll * roll_offset_;
-    servo_errors_[4] = pitch * pitch_offset_;
-    servo_errors_[5] = yaw * yaw_offset_;
+    x_.error = (process_ == PUSH ? (tools2exchanger.transform.translation.x) :
+                                   (tools2exchanger.transform.translation.x - x_.offset_refer_exchanger));
+    y_.error = tools2exchanger.transform.translation.y - y_.offset_refer_exchanger;
+    re_y_.error = y_.error;
+    z_.error = tools2exchanger.transform.translation.z - z_.offset_refer_exchanger;
+    re_z_.error = z_.error;
+    roll_.error = roll * roll_.offset_refer_exchanger;
+    pitch_.error = pitch * pitch_.offset_refer_exchanger;
+    yaw_.error = yaw * yaw_.offset_refer_exchanger;
+
     ros::Duration dt = ros::Time::now() - last_time_;
     last_time_ = ros::Time::now();
 
-    servo_pid_value_[0] = pid_x_.computeCommand(servo_errors_[0], dt);
+    servo_pid_value_[0] = x_.computerVel(dt);
     if (process_ != REY)
-      servo_pid_value_[1] = pid_y_.computeCommand(servo_errors_[1], dt);
+      servo_pid_value_[1] = y_.computerVel(dt);
     else
-      servo_pid_value_[1] = pid_re_y_.computeCommand(servo_errors_[1], dt);
+      servo_pid_value_[1] = re_y_.computerVel(dt);
     if (process_ == REZ || process_ == RREZ)
-      servo_pid_value_[2] = pid_re_z_.computeCommand(servo_errors_[2], dt);
+      servo_pid_value_[2] = re_z_.computerVel(dt);
     else
-      servo_pid_value_[2] = pid_z_.computeCommand(servo_errors_[2], dt);
-    servo_pid_value_[3] = pid_roll_.computeCommand(servo_errors_[3], dt);
-    servo_pid_value_[4] = pid_pitch_.computeCommand(servo_errors_[4], dt);
-    servo_pid_value_[5] = pid_yaw_.computeCommand(servo_errors_[5], dt);
+      servo_pid_value_[2] = z_.computerVel(dt);
+    servo_pid_value_[3] = roll_.computerVel(dt);
+    servo_pid_value_[4] = pitch_.computerVel(dt);
+    servo_pid_value_[5] = yaw_.computerVel(dt);
   }
   void computeServoMoveScale()
   {
@@ -669,12 +649,12 @@ private:
         move_joint_num++;
         if (process_ == YZ)
         {
-          if (abs(servo_errors_[i]) <= close_tolerance_)
+          if (abs(servo_errors_[i]) <= (y_.tolerance + z_.tolerance) / 2)
             arrived_joint_num++;
         }
         else
         {
-          if (abs(servo_errors_[i]) <= servo_error_tolerance_[i])
+          if (abs(servo_errors_[i]) <= move_gather_[i].tolerance)
             arrived_joint_num++;
         }
       }
@@ -693,15 +673,159 @@ private:
     rectify_z_ = link7_length_ * sin(theta) * cos(theta) / (tan(M_PI_2 - theta / 2));
   }
 
+  SingleDirectionMove x_, y_, z_, roll_, pitch_, yaw_, re_y_, re_z_;
+  std::vector<SingleDirectionMove> move_gather_{};
   ros::Time last_time_;
-  double link7_length_{}, joint7_msg_{}, rectify_x_, rectify_z_, close_tolerance_, roll_offset_, pitch_offset_,
-      yaw_offset_;
-  control_toolbox::Pid pid_x_, pid_y_, pid_re_y_, pid_re_z_, pid_z_, pid_roll_, pid_pitch_, pid_yaw_;
-  std::vector<double> xyz_offset_{}, servo_errors_{}, servo_scales_{}, servo_error_tolerance_{}, servo_pid_value_{};
+  double link7_length_{}, joint7_msg_{}, rectify_x_, rectify_z_;
+  std::vector<double> servo_errors_{}, servo_scales_{}, servo_pid_value_{};
 };
 
-// class MotionMove
+class UnionMove : public ProgressBase
+{
+public:
+  enum UnionMoveProcess
+  {
+    MOTION,
+    SERVO_Z,
+    SERVO_Y,
+    SERVO_X,
+    FINISH
+  };
+  UnionMove(XmlRpc::XmlRpcValue& union_move, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh)
+    : ProgressBase(union_move, tf_buffer, nh)
+  {
+    process_ = MOTION;
+    last_process_ = process_;
+    process_num_ = 4;
+    motion_name_ = union_move.hasMember("motion_name") ? std::string(union_move["motion_name"]) : "AUTO_EXCHANGE";
+    x_.init(union_move["x"], "x", nh);
+    y_.init(union_move["y"], "y", nh);
+    z_.init(union_move["z"], "z", nh);
+    move_gather_.clear();
+    move_gather_.push_back(x_);
+    move_gather_.push_back(y_);
+    move_gather_.push_back(z_);
+    servo_scales_.resize(3, 0.);
+  }
+  std::string getMotionName()
+  {
+    return motion_name_;
+  }
+
+private:
+  void stateMachine() override
+  {
+    if (is_motion_finish_)
+      process_ = SERVO_Z;
+    if (process_ != MOTION)
+    {
+      computeServoMoveScale();
+      manageServoMoveProcess();
+    }
+  }
+  void initComputerValue()
+  {
+    x_.error = 0.;
+    y_.error = 0.;
+    z_.error = 0.;
+  }
+  void computeServoMoveError()
+  {
+    initComputerValue();
+    std::vector<double> errors;
+    geometry_msgs::TransformStamped tools2exchanger;
+    try
+    {
+      tools2exchanger = tf_buffer_.lookupTransform("tools_link", "exchanger", ros::Time(0));
+    }
+    catch (tf2::TransformException& ex)
+    {
+      ROS_WARN("%s", ex.what());
+    }
+    x_.error = tools2exchanger.transform.translation.x - x_.offset_refer_exchanger;
+    y_.error = tools2exchanger.transform.translation.y - y_.offset_refer_exchanger;
+    z_.error = tools2exchanger.transform.translation.z - z_.offset_refer_exchanger;
+
+    ros::Duration dt = ros::Time::now() - last_time_;
+    last_time_ = ros::Time::now();
+
+    x_.getPidValue(dt);
+    y_.getPidValue(dt);
+    z_.getPidValue(dt);
+  }
+  void computeServoMoveScale()
+  {
+    computeServoMoveError();
+    switch (process_)
+    {
+      case SERVO_Z:
+      {
+        servo_scales_[0] = 0.;
+        servo_scales_[1] = 0.;
+        servo_scales_[2] = z_.pid_value;
+      }
+      break;
+      case SERVO_Y:
+      {
+        servo_scales_[0] = 0.;
+        servo_scales_[1] = y_.pid_value;
+        servo_scales_[2] = 0.;
+      }
+      break;
+      case SERVO_X:
+      {
+        servo_scales_[0] = x_.pid_value;
+        servo_scales_[1] = 0.;
+        servo_scales_[2] = 0.;
+      }
+      break;
+    }
+  }
+  void manageServoMoveProcess()
+  {
+    int move_joint_num = 0, arrived_joint_num = 0;
+    for (int i = 0; i < (int)servo_scales_.size(); ++i)
+    {
+      if (servo_scales_[i] != 0)
+      {
+        move_joint_num++;
+        if (abs(move_gather_[i].error) <= move_gather_[i].tolerance)
+          arrived_joint_num++;
+      }
+    }
+    if (arrived_joint_num == move_joint_num)
+    {
+      if (process_ != FINISH)
+        process_++;
+      else
+        is_finish_ = true;
+    }
+  }
+  bool is_motion_finish_{ false };
+  ros::Time last_time_;
+  SingleDirectionMove x_, y_, z_;
+  std::string motion_name_;
+  std::vector<double> servo_scales_{};
+  std::vector<SingleDirectionMove> move_gather_{};
+};
+
+// class MotionMove : public ProgressBase
 //{
+// public:
+//     enum MotionMoveProcess
+//     {
+//         SPHERE,
+//         LINE,
+//         POINT,
+//         FINISH
+//     };
+//     MotionMove(XmlRpc::XmlRpcValue& auto_servo_move, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh)
+//     : ProgressBase(auto_servo_move, tf_buffer, nh) {
+//         process_ = SPHERE;
+//         last_process_ = process_;
+//         process_num_ = 4;
+//     }
+//
 //};
 //
 // class PostAdjust
