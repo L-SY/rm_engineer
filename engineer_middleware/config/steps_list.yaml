@@ -1349,18 +1349,40 @@ steps_list:
         <<: *DRAG_POSE2
 
 
-  EXCHANGE_SPHERE:
+  OLD_EXCHANGE_SPHERE:
     - step: "close to a sphere"
       arm:
         frame: exchanger
-        position: [ -0.4, 0., 0. ]
+        xyz: [ -0.4, 0., -0.25 ]
         rpy: [ 0., 0., 0. ]
-        rpy_rectify: [ 0.01,0.03,0.03 ]
-        tolerance_position: 0.2
-        tolerance_orientation: 0.2
+        rpy_rectify: [ 0.01,0.1,0.03 ]
+        tolerance_position: 0.1
+        tolerance_orientation: 0.01
         spacial_shape: SPHERE
-        radius: 0.3
-        point_resolution: 0.90
+        radius: 0.5
+        point_resolution: 0.5
         max_planning_times: 100
         common:
-          <<: *SLOWLY
+          <<: *QUICKLY
+
+  EXCHANGE_SPHERE:
+    - step: "test new exchange"
+      arm:
+        frame: exchanger
+        xyz: [ -0.2, 0., 0. ]
+        rpy: [ 0., 0., 0. ]
+        is_refer_planning_frame : true
+        drift_dimensions: [ true, true, true, true, true, true]
+        tolerance_position: 0.1
+        tolerance_orientation: 0.01
+        spacial_shape: SPHERE
+        radius: 0.5
+        point_resolution: 0.5
+        max_planning_times: 100
+        common:
+          <<: *QUICKLY
+    - step: "test joint7"
+      end_effector:
+        original_tf: tools_link
+        reference_tf: exchanger
+        direction: pitch
