@@ -95,6 +95,14 @@ public:
   {
     return enter_flag_;
   }
+  bool getTimeOutFlag()
+  {
+    return is_time_out_;
+  }
+  bool getProcess()
+  {
+    return process_;
+  }
   void checkTimeout()
   {
     if (!is_recorded_time_)
@@ -107,6 +115,7 @@ public:
       ROS_ERROR("Progress timeout, should be finish in %f seconds", time_out_);
       is_recorded_time_ = false;
       is_finish_ = true;
+      is_time_out_ = true;
     }
   }
   void checkInternalTimeout()
@@ -132,7 +141,8 @@ public:
 protected:
   tf2_ros::Buffer& tf_buffer_;
   int process_{}, last_process_{}, process_num_{};
-  bool is_finish_{ false }, is_recorded_time_{ false }, enter_flag_{ false }, is_recorded_internal_time_{ false };
+  bool is_finish_{ false }, is_recorded_time_{ false }, enter_flag_{ false }, is_recorded_internal_time_{ false },
+      is_time_out_{ false };
   double time_out_{};
   std::vector<double> internal_time_out_{};
   ros::Time start_time_{}, internal_start_time_{};
@@ -747,8 +757,16 @@ private:
         find_->run();
         if (find_->getFinishFlag())
         {
-          process_ = re_find_ ? MOVE : PRE_ADJUST;
-          find_->init();
+          if (find_->getTimeOutFlag() && find_->getProcess() == 0)
+          {
+            is_finish_ = true;
+            find_->init();
+          }
+          else
+          {
+            process_ = re_find_ ? MOVE : PRE_ADJUST;
+            find_->init();
+          }
         }
       }
       break;
