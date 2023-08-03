@@ -713,6 +713,10 @@ public:
   }
 
 private:
+  void printProcess() override
+  {
+    ROS_INFO_STREAM(process_);
+  }
   void stateMachine() override
   {
     if (is_motion_finish_)
@@ -855,9 +859,11 @@ public:
     ros::NodeHandle nh_auto_find(nh, "auto_find");
     ros::NodeHandle nh_auto_pre_adjust(nh, "auto_pre_adjust");
     ros::NodeHandle nh_auto_servo_move(nh, "auto_servo_move");
+    ros::NodeHandle nh_union_move(nh, "union_move");
     find_ = new Find(auto_exchange["auto_find"], tf_buffer, nh_auto_find);
     pre_adjust_ = new ProAdjust(auto_exchange["auto_pre_adjust"], tf_buffer, nh_auto_pre_adjust);
     auto_servo_move_ = new AutoServoMove(auto_exchange["auto_servo_move"], tf_buffer, nh_auto_servo_move);
+    union_move_ = new UnionMove(auto_exchange["union_move"], tf_buffer, nh_union_move);
     exchanger_tf_update_pub_ = nh_.advertise<std_msgs::Bool>("/is_update_exchanger", 1);
   }
   void init() override
@@ -875,6 +881,7 @@ public:
   Find* find_{};
   ProAdjust* pre_adjust_{};
   AutoServoMove* auto_servo_move_{};
+  UnionMove* union_move_{};
 
 private:
   void exchangerTfUpdate(bool is_exchanger_tf_update)
