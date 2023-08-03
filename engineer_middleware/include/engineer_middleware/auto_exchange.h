@@ -547,8 +547,11 @@ private:
   }
   void initComputerValue()
   {
-    for (int i = 0; i < (int)move_gather_.size(); ++i)
-      move_gather_[i].error = 0.;
+    for (int i = 0; i < (int)servo_pid_value_.size(); ++i)
+    {
+      servo_pid_value_[i] = 0.;
+      servo_scales_[i] = 0.;
+    }
   }
   void computeServoMoveError()
   {
@@ -736,7 +739,6 @@ private:
   void computeServoMoveError()
   {
     initComputerValue();
-    std::vector<double> errors;
     geometry_msgs::TransformStamped tools2exchanger;
     try
     {
