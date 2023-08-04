@@ -335,8 +335,8 @@ common:
       delay: 0.3
     velocity_z_pitch_in: &VELOCITY_PITCH_Z_IN
       mode: "VELOCITY"
-      values: [ 0.,0.,0.,0.,-1.0,0. ]
-      delay: 1.0
+      values: [ 0.,0.,0.,0.,-5.0,0. ]
+      delay: 0.85
     velocity_z_in_slowly: &VELOCITY_Z_IN_SLOWLY
       mode: "VELOCITY"
       values: [ 0.,0.,-0.5,0.,-0.01,0. ]
@@ -346,7 +346,7 @@ common:
       delay: 1.1
     position_z_out: &POSITION_Z_OUT
       mode: "POSITION"
-      values: [ 0.,0.,20.,0.,0.,0. ]
+      values: [ 0.,0.,18.,0.,0.,0. ]
       delay: 0.2
     position_z_out_little: &POSITION_Z_OUT_LITTLE
       mode: "POSITION"
@@ -365,7 +365,7 @@ common:
       delay: 0.6
     position_pitch_reversal_pi: &POSITION_PITCH_REVERSAL_PI
       mode: "POSITION"
-      values: [ 0.,0.,0.,0.,-90,0. ]
+      values: [ 0.,0.,0.,0.,-100,0. ]
       delay: 1
 
   chassis_move:
@@ -755,7 +755,7 @@ steps_list:
   TAKE_WHEN_ONE_STONE_AUTO_REVERSE:
     - step: "island gimbal"
       gimbal:
-        <<: *GROUND_POS
+        <<: *ISLAND_POS
     - step: "joint7 up"
       end_effector:
         <<: *JOINT7_UP_POSITION_NO_DELAY
@@ -772,7 +772,7 @@ steps_list:
         variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
     - step: "reversal pitch pi"
       reversal:
-        <<: *POSITION_PITCH_REVERSAL_PI
+        <<: *VELOCITY_PITCH_Z_IN
     - step: "stop reversal"
       reversal:
         <<: *VELOCITY_STOP
@@ -811,7 +811,7 @@ steps_list:
   TAKE_WHEN_TWO_STONE_AUTO_REVERSE:
     - step: "island gimbal"
       gimbal:
-        <<: *GROUND_POS
+        <<: *ISLAND_POS
     - step: "joint7 up"
       end_effector:
         <<: *JOINT7_UP_POSITION_NO_DELAY
@@ -819,7 +819,7 @@ steps_list:
       arm:
         <<: *READY_TO_ACCESS_STORE
         variable: [ *JOINT1_TWO_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
-    - step: "position out little"
+    - step: "reversal out little"
       reversal:
         <<: *POSITION_Z_OUT_LITTLE
     - step: "move up with stone and ready to get stone"
@@ -828,7 +828,7 @@ steps_list:
         variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
     - step: "reversal pitch pi"
       reversal:
-        <<: *POSITION_PITCH_REVERSAL_PI
+        <<: *VELOCITY_PITCH_Z_IN
     - step: "stop reversal"
       reversal:
         <<: *VELOCITY_STOP
@@ -836,9 +836,6 @@ steps_list:
       arm:
         <<: *READY_TO_ACCESS_STORE
         variable: [ *JOINT1_EXCHANGE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
-    - step: "reversal z out little"
-      reversal:
-        <<: *POSITION_Z_OUT_LITTLE2
   TAKE_WHEN_TWO_STONE_AUTO_REVERSE0:
     - step: "open gripper"
       gripper:
@@ -867,7 +864,7 @@ steps_list:
   TAKE_WHEN_ONE_STONE_NO_REVERSE:
     - step: "island gimbal"
       gimbal:
-        <<: *GROUND_POS
+        <<: *ISLAND_POS
     - step: "joint7 up"
       end_effector:
         <<: *JOINT7_UP_POSITION_NO_DELAY
@@ -909,7 +906,7 @@ steps_list:
   TAKE_WHEN_TWO_STONE_NO_REVERSE:
     - step: "island gimbal"
       gimbal:
-        <<: *GROUND_POS
+        <<: *ISLAND_POS
     - step: "joint7 up"
       end_effector:
         <<: *JOINT7_UP_POSITION_NO_DELAY
