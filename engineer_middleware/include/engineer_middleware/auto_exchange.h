@@ -316,8 +316,8 @@ public:
   {
     SET_GOAL,
     CHASSIS_Y,
-    CHASSIS_X,
     CHASSIS_YAW,
+    CHASSIS_X,
     FINISH
   };
   ProAdjust(XmlRpc::XmlRpcValue& pre_adjust, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh)
@@ -353,6 +353,15 @@ public:
         chassis_vel_cmd_.linear.x = 0.;
         chassis_vel_cmd_.angular.z = 0.;
         if (y_.isFinish())
+          process_ = CHASSIS_YAW;
+      }
+      break;
+      case CHASSIS_YAW:
+      {
+        computerChassisVel();
+        chassis_vel_cmd_.linear.x = 0.;
+        chassis_vel_cmd_.linear.y = 0.;
+        if (yaw_.isFinish())
           process_ = CHASSIS_X;
       }
       break;
@@ -362,22 +371,7 @@ public:
         chassis_vel_cmd_.linear.y = 0.;
         chassis_vel_cmd_.angular.z = 0.;
         if (x_.isFinish())
-        {
-          process_ = re_x_ ? FINISH : CHASSIS_YAW;
-          re_x_ = false;
-        }
-      }
-      break;
-      case CHASSIS_YAW:
-      {
-        computerChassisVel();
-        chassis_vel_cmd_.linear.x = 0.;
-        chassis_vel_cmd_.linear.y = 0.;
-        if (yaw_.isFinish())
-        {
-          process_ = CHASSIS_X;
-          re_x_ = true;
-        }
+          process_ = FINISH;
       }
       break;
       case FINISH:
@@ -450,7 +444,6 @@ private:
     tf2::doTransform(chassis_target_, chassis_target_, tf_buffer_.lookupTransform("map", "base_link", ros::Time(0)));
   }
 
-  bool re_x_{ false };
   ros::Time last_time_;
   std::string chassis_command_source_frame_{ "base_link" };
   geometry_msgs::Twist chassis_vel_cmd_{};
