@@ -1061,7 +1061,7 @@ steps_list:
         variable: [ 0, 0, *JOINT3_MID_GET_ORE_POSITION, 0, 0, 0 ]
     - step: "move up ore"
       arm:
-        <<: *READY_TO_GET_ORE
+        <<: *READY_TO_GET_GOLD_ORE
         variable: [ 0, 0, *JOINT3_MID_GET_ORE_POSITION, 0, 0, *JOINT6_DOWN_POSITION ]
     - step: "reverse ore"
       arm:
@@ -1084,6 +1084,10 @@ steps_list:
     - step: "move joint6 up"
       arm:
         <<: *REVERSE_JOINT6_UP
+    - step: "home"
+      arm:
+        <<: *HOME
+        variable: [ *JOINT1_ONE_STONE_POSITION, 0, 0, 0, 0, 0 ]
 
   CATCH_DROP:
     - step: "joint7 up"
@@ -1391,10 +1395,10 @@ steps_list:
     - step: "test new exchange"
       arm:
         frame: exchanger
-        is_refer_planning_frame : true
-        xyz: [ -0.4, 0., -0.15 ]
+        is_refer_planning_frame: true
+        xyz: [ -0.4, 0., 0. ]
         rpy: [ 0., 0., 0. ]
-        drift_dimensions: [ true, true, true, true, false, true]
+        drift_dimensions: [ true, true, true, true, false, true ]
         tolerance_position: 0.05
         tolerance_orientation: 0.05
         spacial_shape: SPHERE
@@ -1418,7 +1422,7 @@ steps_list:
         tolerance_position: 0.001
         tolerance_orientation: 0.001
         spacial_shape: BASICS
-        basics_length: [ 0.001, 0.2, 0.001]
+        basics_length: [ 0.1, 0.01, 0.001 ]
         point_resolution: 0.5
         max_planning_times: 50
         common:
