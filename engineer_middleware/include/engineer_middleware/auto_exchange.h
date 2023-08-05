@@ -315,9 +315,9 @@ public:
   enum AdjustProcess
   {
     SET_GOAL,
+    CHASSIS_X,
     CHASSIS_Y,
     CHASSIS_YAW,
-    CHASSIS_X,
     FINISH
   };
   ProAdjust(XmlRpc::XmlRpcValue& pre_adjust, tf2_ros::Buffer& tf_buffer, ros::NodeHandle& nh)
@@ -325,7 +325,7 @@ public:
   {
     process_ = SET_GOAL;
     last_process_ = process_;
-    process_num_ = 4;
+    process_num_ = 5;
     x_.init(pre_adjust["x"], "x", nh);
     y_.init(pre_adjust["y"], "y", nh);
     yaw_.init(pre_adjust["yaw"], "yaw", nh);
@@ -335,6 +335,7 @@ public:
   {
     ProgressBase::init();
     process_ = SET_GOAL;
+    re_adjust_ = false;
     initComputerValue();
   }
   void stateMachine() override
@@ -344,7 +345,16 @@ public:
       case SET_GOAL:
       {
         set_goal();
-        process_ = CHASSIS_Y;
+        process_ = CHASSIS_X;
+      }
+      break;
+      case CHASSIS_X:
+      {
+        computerChassisVel();
+        chassis_vel_cmd_.linear.y = 0.;
+        chassis_vel_cmd_.angular.z = 0.;
+        if (x_.isFinish())
+          process_ = re_adjust_ ? FINISH : CHASSIS_Y;
       }
       break;
       case CHASSIS_Y:
@@ -362,21 +372,16 @@ public:
         chassis_vel_cmd_.linear.x = 0.;
         chassis_vel_cmd_.linear.y = 0.;
         if (yaw_.isFinish())
-          process_ = CHASSIS_X;
-      }
-      break;
-      case CHASSIS_X:
-      {
-        computerChassisVel();
-        chassis_vel_cmd_.linear.y = 0.;
-        chassis_vel_cmd_.angular.z = 0.;
-        if (x_.isFinish())
-          process_ = FINISH;
+        {
+          process_ = SET_GOAL;
+          re_adjust_ = true;
+        }
       }
       break;
       case FINISH:
       {
         is_finish_ = true;
+        re_adjust_ = false;
         initComputerValue();
         ROS_INFO_STREAM("PRE ADJUST FINISH");
       }
@@ -431,8 +436,8 @@ private:
     base2exchange = tf_buffer_.lookupTransform("base_link", "exchanger", ros::Time(0));
     quatToRPY(base2exchange.transform.rotation, roll, pitch, yaw);
 
-    double goal_x = base2exchange.transform.translation.x - x_.offset_refer_exchanger - pitch * 0.1;
-    double goal_y = base2exchange.transform.translation.y - y_.offset_refer_exchanger - yaw * 0.2;
+    double goal_x = base2exchange.transform.translation.x - x_.offset_refer_exchanger;
+    double goal_y = base2exchange.transform.translation.y - y_.offset_refer_exchanger;
     double goal_yaw = yaw * yaw_.offset_refer_exchanger;
     chassis_original_target_.pose.position.x = goal_x;
     chassis_original_target_.pose.position.y = goal_y;
@@ -444,6 +449,7 @@ private:
     tf2::doTransform(chassis_target_, chassis_target_, tf_buffer_.lookupTransform("map", "base_link", ros::Time(0)));
   }
 
+  bool re_adjust_{ false };
   ros::Time last_time_;
   std::string chassis_command_source_frame_{ "base_link" };
   geometry_msgs::Twist chassis_vel_cmd_{};
@@ -915,7 +921,6 @@ public:
   {
     ProgressBase::init();
     process_ = FIND;
-    re_find_ = false;
     find_->init();
     pre_adjust_->init();
     union_move_->init();
@@ -951,7 +956,7 @@ private:
           }
           else
           {
-            process_ = re_find_ ? MOVE : PRE_ADJUST;
+            process_ = PRE_ADJUST;
             find_->init();
           }
         }
@@ -963,8 +968,7 @@ private:
         pre_adjust_->run();
         if (pre_adjust_->getFinishFlag())
         {
-          process_ = FIND;
-          re_find_ = true;
+          process_ = MOVE;
           pre_adjust_->init();
         }
       }
@@ -993,7 +997,6 @@ private:
     else if (process_ == FINISH)
       ROS_INFO_STREAM("FINISH");
   }
-  bool re_find_{ false };
   // tf update
   std_msgs::Bool is_exchanger_tf_update_{};
   ros::Publisher exchanger_tf_update_pub_;

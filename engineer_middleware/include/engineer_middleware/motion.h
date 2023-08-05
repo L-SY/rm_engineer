@@ -241,12 +241,8 @@ public:
     radius_ = xmlRpcGetDouble(motion, "radius", 0.1);
     link7_length_ = xmlRpcGetDouble(motion, "link7_length", 0.);
     if (motion.hasMember("drift_dimensions"))
-    {
       for (int i = 0; i < (int)drift_dimensions_.size(); ++i)
-      {
         drift_dimensions_[i] = motion["drift_dimensions"][i];
-      }
-    }
     if (motion.hasMember("basics_length"))
     {
       ROS_ASSERT(motion["basics_length"].getType() == XmlRpc::XmlRpcValue::TypeArray);
