@@ -1396,13 +1396,13 @@ steps_list:
       arm:
         frame: exchanger
         is_refer_planning_frame: true
-        xyz: [ -0.4, 0., 0. ]
+        xyz: [ -0.3, 0., 0. ]
         rpy: [ 0., 0., 0. ]
         drift_dimensions: [ true, true, true, true, false, true ]
         tolerance_position: 0.05
         tolerance_orientation: 0.05
         spacial_shape: SPHERE
-        radius: 0.1
+        radius: 0.2
         point_resolution: 0.5
         max_planning_times: 100
         common:
