@@ -105,6 +105,8 @@ common:
                             -0.2
       sky_store_position: &JOINT3_SKY_STORE_POSITION
                             0.2515
+      gold_ore_position: &JOINT3_GOLD_ORE_POSITION
+                           0.24564
 
     store_and_take:
       store_stone_position: &JOINT3_STORE_STONE_POSITION
@@ -294,6 +296,18 @@ common:
           <<: *NORMAL_TOLERANCE
       store_stone_after_get_ore: &STORE_STONE_AFTER_GET_ORE
         joints: [ *JOINT1_STORE_ORE_POSITION, *JOINT2_ACCESS_STORE_POSITION, *JOINT3_STORE_STONE_POSITION, *JOINT4_UP_POSITION, *JOINT5_RT_POSITION, *JOINT6_ACCESS_STONE_POSITION ]
+        common:
+          <<: *NORMALLY_HIGH_TIMEOUT
+        tolerance:
+          <<: *MAX_TOLERANCE
+      ready_to_store_gold_stone_after_get_ore: &READY_TO_STORE_GOLD_STONE_AFTER_GET_ORE
+        joints: [ *JOINT1_STORE_ORE_POSITION, *JOINT2_ACCESS_STORE_POSITION, *JOINT3_GOLD_ORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_RT_POSITION, *JOINT6_UP_POSITION ]
+        common:
+          <<: *QUICKLY
+        tolerance:
+          <<: *NORMAL_TOLERANCE
+      store_gold_stone_after_get_ore: &STORE_GOLD_STONE_AFTER_GET_ORE
+        joints: [ *JOINT1_STORE_ORE_POSITION, *JOINT2_ACCESS_STORE_POSITION, *JOINT3_GOLD_ORE_POSITION, *JOINT4_UP_POSITION, *JOINT5_RT_POSITION, *JOINT6_ACCESS_STONE_POSITION ]
         common:
           <<: *NORMALLY_HIGH_TIMEOUT
         tolerance:
@@ -794,9 +808,6 @@ steps_list:
       arm:
         <<: *READY_TO_ACCESS_STORE
         variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
-      #    - step: "reversal z out little"
-      #      reversal:
-      #        <<: *POSITION_Z_OUT_LITTLE
     - step: "open gripper"
       gripper:
         <<: *OPEN_GRIPPER
@@ -804,6 +815,10 @@ steps_list:
       arm:
         <<: *ACCESS_STORE
         variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
+    - step: "wait gripper get stone steady"
+      reversal:
+        <<: *VELOCITY_STOP
+        delay: 0.3
     - step: "REVERSAL Z OUT"
       reversal:
         <<: *VELOCITY_Z_OUT
@@ -857,6 +872,10 @@ steps_list:
       arm:
         <<: *ACCESS_STORE
         variable: [ *JOINT1_EXCHANGE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
+    - step: "wait gripper get stone steady"
+      reversal:
+        <<: *VELOCITY_STOP
+        delay: 0.3
     - step: "REVERSAL OUT"
       reversal:
         <<: *VELOCITY_Z_OUT
@@ -1071,10 +1090,10 @@ steps_list:
         <<: *VELOCITY_Z_IN_QUICKLY
     - step: "ready to store stone"
       arm:
-        <<: *READY_TO_STORE_STONE_AFTER_GET_ORE
+        <<: *READY_TO_STORE_GOLD_STONE_AFTER_GET_ORE
     - step: "store stone"
       arm:
-        <<: *STORE_STONE_AFTER_GET_ORE
+        <<: *STORE_GOLD_STONE_AFTER_GET_ORE
     - step: "change stone"
       stone_num:
         change: "WHITE"
@@ -1402,7 +1421,7 @@ steps_list:
         tolerance_position: 0.05
         tolerance_orientation: 0.05
         spacial_shape: SPHERE
-        radius: 0.2
+        radius: 0.3
         point_resolution: 0.5
         max_planning_times: 100
         common:
@@ -1422,8 +1441,8 @@ steps_list:
         tolerance_position: 0.001
         tolerance_orientation: 0.001
         spacial_shape: BASICS
-        basics_length: [ 0.1, 0.01, 0.001 ]
-        point_resolution: 0.5
+        basics_length: [ 0.1, 0.1, 0.1 ]
+        point_resolution: 0.6
         max_planning_times: 50
         common:
           <<: *NORMALLY
