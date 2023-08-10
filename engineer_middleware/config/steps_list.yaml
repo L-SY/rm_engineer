@@ -20,6 +20,10 @@ common:
       speed: 0.8
       accel: 0.8
       timeout: 7.
+    little_quickly: &LITTLE_QUICKLY
+      speed: 0.6
+      accel: 0.6
+      timeout: 1.
     joint6_normally: &JOINT6_NORMALLY
       speed: 0.4
       accel: 0.3
@@ -39,7 +43,7 @@ common:
   joint1:
     mechanical:
       down_position: &JOINT1_DOWN_POSITION
-                       -0.09600
+                       0.
       up_position: &JOINT1_UP_POSITION
                      0.43
     home:
@@ -118,6 +122,8 @@ common:
     mechanical:
       up_position: &JOINT4_UP_POSITION
                      0.0001
+      mid_position: &JOINT4_MID_POSITION
+                      0.7
       down_position: &JOINT4_DOWN_POSITION
                        1.55
 
@@ -141,6 +147,8 @@ common:
                             2.167400
     place_on_reverse: &JOINT6_PLACE_STONE_POSITION
                         1.047
+    block_dart_position: &JOINT6_BLOCK_DART_POSITION
+                           0.5236
 
   joint7:
     use_for_delay: &DELAY_0_1
@@ -225,6 +233,13 @@ common:
 
     reverse_ore_up: &REVERSE_ORE_UP
       joints: [ "KEEP", "KEEP", "KEEP", "KEEP", "KEEP", *JOINT6_UP_POSITION ]
+      common:
+        <<: *NORMALLY
+      tolerance:
+        <<: *NORMAL_TOLERANCE
+
+    take_back_ore_after_catch_drop: &TAKE_BACK_ORE
+      joints: [ "KEEP", *JOINT2_READY_TO_ACCESS_STONE_POSITION, "KEEP", "KEEP", "KEEP", "KEEP" ]
       common:
         <<: *NORMALLY
       tolerance:
@@ -334,7 +349,7 @@ common:
           <<: *NORMAL_TOLERANCE
 
     exchange_position: &EXCHANGE_POSITION
-      joints: [ *JOINT1_EXCHANGE_POSITION, *JOINT2_EXCHANGE_POSITION, *JOINT3_LF_POSITION, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_UP_POSITION ]
+      joints: [ *JOINT1_STORE_ORE_POSITION, *JOINT2_EXCHANGE_POSITION, *JOINT3_LF_POSITION, *JOINT4_UP_POSITION, *JOINT5_MID_POSITION, *JOINT6_UP_POSITION ]
       common:
         <<: *NORMALLY
       tolerance:
@@ -364,6 +379,10 @@ common:
       mode: "VELOCITY"
       values: [ 0.,0.,0.,0.,-5.0,0. ]
       delay: 0.85
+    velocity_z_pitch_in_90: &VELOCITY_PITCH_Z_IN_90
+      mode: "VELOCITY"
+      values: [ 0.,0.,0.,0.,-5.0,0. ]
+      delay: 0.5
     velocity_z_in_slowly: &VELOCITY_Z_IN_SLOWLY
       mode: "VELOCITY"
       values: [ 0.,0.,-0.5,0.,-0.01,0. ]
@@ -373,7 +392,7 @@ common:
       delay: 1.1
     position_z_out: &POSITION_Z_OUT
       mode: "POSITION"
-      values: [ 0.,0.,18.,0.,0.,0. ]
+      values: [ 0.,0.,7.,0.,0.,0. ]
       delay: 0.2
     position_z_out_little: &POSITION_Z_OUT_LITTLE
       mode: "POSITION"
@@ -520,7 +539,20 @@ steps_list:
     - step: "reversal stop"
       reversal:
         <<: *VELOCITY_STOP
-  ########### RT  ############
+    - step: "chassis backward"
+      chassis:
+        <<: *CHASSIS_BACKWARD_25
+    - step: "home one stone"
+      arm:
+        <<: *HOME
+        variable: [ *JOINT1_ONE_STONE_POSITION, 0, 0, 0, 0, 0 ]
+    - step: "gimbal side"
+      gimbal:
+        <<: *SIDE_POS
+    - step: "chassis 180"
+      chassis:
+        <<: *CHASSIS_180
+    ########### RT  ############
   SMALL_ISLAND_RT:
     - step: "joint7 up"
       end_effector:
@@ -789,32 +821,32 @@ steps_list:
     - step: "move down to get stone"
       arm:
         <<: *READY_TO_ACCESS_STORE
-        variable: [ *JOINT1_ONE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
+        variable: [ *JOINT1_ZERO_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
     - step: "REVERSAL OUT"
       reversal:
         <<: *POSITION_Z_OUT
     - step: "move up with stone and ready to get stone"
       arm:
         <<: *READY_TO_ACCESS_STORE
-        variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
-    - step: "reversal pitch pi"
-      reversal:
-        <<: *VELOCITY_PITCH_Z_IN
-    - step: "stop reversal"
-      reversal:
-        <<: *VELOCITY_STOP
+        variable: [ *JOINT1_STORE_ORE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
+  #    - step: "reversal pitch pi"
+  #      reversal:
+  #        <<: *VELOCITY_PITCH_Z_IN
+  #    - step: "stop reversal"
+  #      reversal:
+  #        <<: *VELOCITY_STOP
   TAKE_WHEN_ONE_STONE_AUTO_REVERSE0:
     - step: "move up with stone and ready to get stone"
       arm:
         <<: *READY_TO_ACCESS_STORE
-        variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
+        variable: [ *JOINT1_STORE_ORE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
     - step: "open gripper"
       gripper:
         <<: *OPEN_GRIPPER
     - step: "move joint2 to get stone"
       arm:
         <<: *ACCESS_STORE
-        variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
+        variable: [ *JOINT1_STORE_ORE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
     - step: "wait gripper get stone steady"
       reversal:
         <<: *VELOCITY_STOP
@@ -825,7 +857,7 @@ steps_list:
     - step: "reverse joint6"
       arm:
         <<: *ACCESS_STORE
-        variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_UP_POSITION ]
+        variable: [ *JOINT1_STORE_ORE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_UP_POSITION ]
     - step: "REVERSAL OUT"
       reversal:
         <<: *VELOCITY_STOP
@@ -853,17 +885,17 @@ steps_list:
     - step: "move up with stone and ready to get stone"
       arm:
         <<: *READY_TO_ACCESS_STORE
-        variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
-    - step: "reversal pitch pi"
-      reversal:
-        <<: *VELOCITY_PITCH_Z_IN
-    - step: "stop reversal"
-      reversal:
-        <<: *VELOCITY_STOP
+        variable: [ *JOINT1_STORE_ORE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
+    #    - step: "reversal pitch pi"
+    #      reversal:
+    #        <<: *VELOCITY_PITCH_Z_IN
+    #    - step: "stop reversal"
+    #      reversal:
+    #        <<: *VELOCITY_STOP
     - step: "move up with stone and ready to get stone"
       arm:
         <<: *READY_TO_ACCESS_STORE
-        variable: [ *JOINT1_EXCHANGE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
+        variable: [ *JOINT1_STORE_ORE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
   TAKE_WHEN_TWO_STONE_AUTO_REVERSE0:
     - step: "open gripper"
       gripper:
@@ -871,7 +903,7 @@ steps_list:
     - step: "move joint2 to get stone"
       arm:
         <<: *ACCESS_STORE
-        variable: [ *JOINT1_EXCHANGE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
+        variable: [ *JOINT1_STORE_ORE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
     - step: "wait gripper get stone steady"
       reversal:
         <<: *VELOCITY_STOP
@@ -882,7 +914,7 @@ steps_list:
     - step: "move joint6"
       arm:
         <<: *ACCESS_STORE
-        variable: [ *JOINT1_EXCHANGE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_UP_POSITION ]
+        variable: [ *JOINT1_STORE_ORE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_UP_POSITION ]
     - step: "change stone"
       stone_num:
         change: "-1"
@@ -903,28 +935,29 @@ steps_list:
     - step: "move down to get stone"
       arm:
         <<: *READY_TO_ACCESS_STORE
-        variable: [ *JOINT1_ONE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
+        variable: [ *JOINT1_ZERO_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
     - step: "REVERSAL OUT"
       reversal:
         <<: *POSITION_Z_OUT
     - step: "move up with stone and ready to get stone"
       arm:
         <<: *READY_TO_ACCESS_STORE
-        variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
+        variable: [ *JOINT1_STORE_ORE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
+  TAKE_WHEN_ONE_STONE_NO_REVERSE0:
     - step: "open gripper"
       gripper:
         <<: *OPEN_GRIPPER
     - step: "move joint2 to get stone"
       arm:
         <<: *ACCESS_STORE
-        variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
+        variable: [ *JOINT1_STORE_ORE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
     - step: "REVERSAL Z OUT"
       reversal:
         <<: *VELOCITY_Z_OUT
     - step: "reverse joint6"
       arm:
         <<: *ACCESS_STORE
-        variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_UP_POSITION ]
+        variable: [ *JOINT1_STORE_ORE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_UP_POSITION ]
     - step: "REVERSAL STOP"
       reversal:
         <<: *VELOCITY_STOP
@@ -949,104 +982,22 @@ steps_list:
     - step: "move up with stone and ready to get stone"
       arm:
         <<: *READY_TO_ACCESS_STORE
-        variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
+        variable: [ *JOINT1_STORE_ORE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
+  TAKE_WHEN_TWO_STONE_NO_REVERSE0:
     - step: "open gripper"
       gripper:
         <<: *OPEN_GRIPPER
     - step: "move joint2 to get stone"
       arm:
         <<: *ACCESS_STORE
-        variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
+        variable: [ *JOINT1_STORE_ORE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
     - step: "REVERSAL OUT"
       reversal:
         <<: *VELOCITY_Z_OUT
     - step: "move joint6"
       arm:
         <<: *ACCESS_STORE
-        variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_UP_POSITION ]
-    - step: "change stone"
-      stone_num:
-        change: "-1"
-    - step: "reversal stop"
-      reversal:
-        <<: *VELOCITY_STOP
-    - step: "move to exchange wait state"
-      arm:
-        <<: *EXCHANGE_POSITION
-  ##### MANUAL REVERSE ####
-  TAKE_WHEN_ONE_STONE_MANUAL_REVERSE:
-    - step: "island gimbal"
-      gimbal:
-        <<: *ISLAND_POS
-    - step: "joint7 up"
-      end_effector:
-        <<: *JOINT7_UP_POSITION_NO_DELAY
-    - step: "move down to get stone"
-      arm:
-        <<: *READY_TO_ACCESS_STORE
-        variable: [ *JOINT1_ONE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
-    - step: "REVERSAL OUT"
-      reversal:
-        <<: *POSITION_Z_OUT
-    - step: "move up with stone and ready to get stone"
-      arm:
-        <<: *READY_TO_ACCESS_STORE
-        variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
-  TAKE_WHEN_ONE_STONE_MANUAL_REVERSE0:
-    - step: "open gripper"
-      gripper:
-        <<: *OPEN_GRIPPER
-    - step: "move joint2 to get stone"
-      arm:
-        <<: *ACCESS_STORE
-        variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
-    - step: "REVERSAL Z OUT"
-      reversal:
-        <<: *VELOCITY_Z_OUT
-    - step: "reverse joint6"
-      arm:
-        <<: *ACCESS_STORE
-        variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_UP_POSITION ]
-    - step: "REVERSAL STOP"
-      reversal:
-        <<: *VELOCITY_STOP
-    - step: "change stone"
-      stone_num:
-        change: "-1"
-    - step: "move to exchange wait state"
-      arm:
-        <<: *EXCHANGE_POSITION
-
-  TAKE_WHEN_TWO_STONE_MANUAL_REVERSE:
-    - step: "island gimbal"
-      gimbal:
-        <<: *ISLAND_POS
-    - step: "joint7 up"
-      end_effector:
-        <<: *JOINT7_UP_POSITION_NO_DELAY
-    - step: "move down to get stone"
-      arm:
-        <<: *READY_TO_ACCESS_STORE
-        variable: [ *JOINT1_TWO_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
-    - step: "move up with stone and ready to get stone"
-      arm:
-        <<: *READY_TO_ACCESS_STORE
-        variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
-  TAKE_WHEN_TWO_STONE_MANUAL_REVERSE0:
-    - step: "open gripper"
-      gripper:
-        <<: *OPEN_GRIPPER
-    - step: "move joint2 to get stone"
-      arm:
-        <<: *ACCESS_STORE
-        variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_ACCESS_STONE_POSITION ]
-    - step: "REVERSAL OUT"
-      reversal:
-        <<: *VELOCITY_Z_OUT
-    - step: "move joint6"
-      arm:
-        <<: *ACCESS_STORE
-        variable: [ *JOINT1_THREE_STONE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_UP_POSITION ]
+        variable: [ *JOINT1_STORE_ORE_POSITION, 0, *JOINT3_TAKE_STONE_POSITION, 0, 0, *JOINT6_UP_POSITION ]
     - step: "change stone"
       stone_num:
         change: "-1"
@@ -1065,6 +1016,10 @@ steps_list:
     - step: "island gimbal"
       gimbal:
         <<: *GROUND_POS
+    - step: "move up to avoid collision"
+      arm:
+        <<: *HOME
+        variable: [ *JOINT1_READY_TO_GET_ORE_POSITION, 0, 0, 0, 0, 0 ]
     - step: "ready_to_get_mid_ore"
       arm:
         <<: *READY_TO_GET_GOLD_ORE
@@ -1122,6 +1077,9 @@ steps_list:
       arm:
         <<: *CATCH_DROP
   CATCH_DROP0:
+    - step: "take back ore"
+      arm:
+        <<: *TAKE_BACK_ORE
     - step: "ready to store stone"
       arm:
         <<: *READY_TO_STORE_STONE_AFTER_CATCH_DROP
@@ -1183,7 +1141,7 @@ steps_list:
           <<: *MAX_TOLERANCE
     - step: "place stone"
       arm:
-        joints: [ *JOINT1_UP_POSITION, *JOINT2_ACCESS_STORE_POSITION, *JOINT3_STORE_STONE_POSITION, *JOINT4_UP_POSITION, *JOINT5_RT_POSITION, *JOINT6_PLACE_STONE_POSITION ]
+        joints: [ *JOINT1_STORE_ORE_POSITION, *JOINT2_ACCESS_STORE_POSITION, *JOINT3_STORE_STONE_POSITION, *JOINT4_UP_POSITION, *JOINT5_RT_POSITION, *JOINT6_PLACE_STONE_POSITION ]
         common:
           <<: *NORMALLY_HIGH_TIMEOUT
         tolerance:
@@ -1198,14 +1156,23 @@ steps_list:
       arm:
         <<: *REVERSE_ORE_UP
 
-  REVERSE_STONE:
-    - step: "gimbal down"
+  REVERSE_STONE_HIGH:
+    - step: "gimbal island"
       gimbal:
-        <<: *GROUND_POS
+        <<: *ISLAND_POS
     - step: "move joint1 up"
       arm:
         <<: *HOME
         variable: [ *JOINT1_UP_POSITION, 0, 0, 0, 0, 0 ]
+
+  REVERSE_STONE_LOW:
+    - step: "gimbal island"
+      gimbal:
+        <<: *ISLAND_POS
+    - step: "move joint1 up"
+      arm:
+        <<: *HOME
+        variable: [ *JOINT1_STORE_ORE_POSITION, 0, 0, 0, 0, 0 ]
 
   ########### STORE ############
   STORE_WHEN_ZERO_STONE:
@@ -1240,10 +1207,6 @@ steps_list:
     - step: "move joint6 up"
       arm:
         <<: *REVERSE_JOINT6_UP
-    - step: "move out arm"
-      arm:
-        <<: *HOME
-        variable: [ *JOINT1_TWO_STONE_POSITION, 0, 0, 0, 0, 0 ]
     - step: "reversal z stop"
       reversal:
         <<: *VELOCITY_STOP
@@ -1272,17 +1235,6 @@ steps_list:
     - step: "change stone"
       stone_num:
         change: "MANUALLY"
-    - step: "avoid_collision"
-      arm:
-        <<: *READY_TO_ACCESS_STORE
-        variable: [ *JOINT1_TWO_STONE_POSITION, 0, *JOINT3_STORE_STONE_POSITION, 0, 0, *JOINT6_UP_POSITION ]
-    - step: "move joint6 up"
-      arm:
-        <<: *REVERSE_JOINT6_UP
-    - step: "move out arm"
-      arm:
-        <<: *HOME
-        variable: [ *JOINT1_TWO_STONE_POSITION, 0, 0, 0, 0, 0 ]
     - step: "reversal z stop"
       reversal:
         <<: *VELOCITY_STOP
@@ -1392,7 +1344,7 @@ steps_list:
       gimbal:
         <<: *DRAG_POSE2
 
-
+  ########## EXCHANGE ############
   OLD_EXCHANGE_SPHERE:
     - step: "close to a sphere"
       arm:
@@ -1421,7 +1373,7 @@ steps_list:
         tolerance_position: 0.05
         tolerance_orientation: 0.05
         spacial_shape: SPHERE
-        radius: 0.3
+        radius: 0.5
         point_resolution: 0.5
         max_planning_times: 100
         common:
@@ -1435,7 +1387,7 @@ steps_list:
       arm:
         frame: exchanger
         is_refer_planning_frame: false
-        xyz: [ -0.2, -0.03, -0.18 ]
+        xyz: [ -0.2, 0., -0.18 ]
         rpy: [ 0., 0., 0. ]
         drift_dimensions: [ true, true, true, true, false, true ]
         tolerance_position: 0.01
@@ -1446,3 +1398,36 @@ steps_list:
         max_planning_times: 50
         common:
           <<: *NORMALLY
+  ########## ANTI DART ###########
+  ANTI_DART:
+    - step: "gimbal ground pos"
+      gimbal:
+        <<: *GROUND_POS
+    - step: "joint7 ready"
+      end_effector:
+        <<: *JOINT7_MID_POSITION_NO_DELAY
+    - step: "ready to get block"
+      arm:
+        joints: [ *JOINT1_DOWN_POSITION, *JOINT2_BACK_POSITION, *JOINT3_MID_POSITION, *JOINT4_DOWN_POSITION, *JOINT5_MID_POSITION, *JOINT6_UP_POSITION ]
+        common:
+          <<: *SLOWLY
+        tolerance:
+          <<: *NORMAL_TOLERANCE
+  ANTI_DART0:
+    - step: "joint7 reverse up"
+      end_effector:
+        <<: *JOINT7_UP_POSITION_NO_DELAY
+    - step: "move up and rotate block"
+      arm:
+        joints: [ *JOINT1_TWO_STONE_POSITION, *JOINT2_BACK_POSITION, *JOINT3_MID_POSITION, *JOINT4_MID_POSITION, *JOINT5_MID_POSITION, *JOINT6_BLOCK_DART_POSITION ]
+        common:
+          <<: *SLOWLY
+        tolerance:
+          <<: *NORMAL_TOLERANCE
+    - step: "move up block and ready to anti dart"
+      arm:
+        joints: [ *JOINT1_UP_POSITION, *JOINT2_BACK_POSITION, *JOINT3_MID_POSITION, *JOINT4_UP_POSITION, *JOINT5_RT_POSITION, *JOINT6_BLOCK_DART_POSITION ]
+        common:
+          <<: *SLOWLY
+        tolerance:
+          <<: *NORMAL_TOLERANCE
