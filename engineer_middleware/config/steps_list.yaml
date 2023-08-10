@@ -192,9 +192,9 @@ common:
 
   gripper:
     open_gripper: &OPEN_GRIPPER
-      state: false
-    close_gripper: &CLOSE_GRIPPER
       state: true
+    close_gripper: &CLOSE_GRIPPER
+      state: false
 
   gimbal:
     side_pos: &SIDE_POS
@@ -545,7 +545,7 @@ steps_list:
     - step: "home one stone"
       arm:
         <<: *HOME
-        variable: [ *JOINT1_ONE_STONE_POSITION, 0, 0, 0, 0, 0 ]
+        variable: [ *JOINT1_ZERO_STONE_POSITION, 0, 0, 0, 0, 0 ]
     - step: "gimbal side"
       gimbal:
         <<: *SIDE_POS
@@ -1058,10 +1058,7 @@ steps_list:
     - step: "move joint6 up"
       arm:
         <<: *REVERSE_JOINT6_UP
-    - step: "home"
-      arm:
-        <<: *HOME
-        variable: [ *JOINT1_ONE_STONE_POSITION, 0, 0, 0, 0, 0 ]
+
 
   CATCH_DROP:
     - step: "joint7 up"
