@@ -230,7 +230,10 @@ private:
       {
         autoSearch(false, true);
         if (is_found_)
-          process_ = ADJUST;
+        {
+          //            process_ = ADJUST;
+          process_ = FINISH;
+        }
       }
       break;
       case ADJUST:
