@@ -9,12 +9,12 @@ common:
       accel: 0.1
       timeout: 15.
     normally: &NORMALLY
-      speed: 0.4
-      accel: 0.3
+      speed: 0.55
+      accel: 0.4
       timeout: 3
     normally_high_timeout: &NORMALLY_HIGH_TIMEOUT
-      speed: 0.4
-      accel: 0.3
+      speed: 0.55
+      accel: 0.4
       timeout: 4
     quickly: &QUICKLY
       speed: 0.8
@@ -426,7 +426,7 @@ common:
     chassis_180: &CHASSIS_180
       frame: base_link
       position: [ 0., 0. ]
-      yaw: 2.80
+      yaw: 2.40
       chassis_tolerance_position: 0.1
       chassis_tolerance_angular: 0.2
       common:
